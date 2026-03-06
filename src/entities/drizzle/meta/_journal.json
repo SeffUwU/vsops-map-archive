@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1732263950074,
+      "tag": "0000_add-user",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1732266312140,
+      "tag": "0001_add-generated-uuid",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1732287866547,
+      "tag": "0002_add-default-locale",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1732352008567,
+      "tag": "0003_make-user-fields-not-null",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1732360549290,
+      "tag": "0004_add-campaigns",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1732446860397,
+      "tag": "0005_fix-many-to-many",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1732449939365,
+      "tag": "0006_make-campaign-creator-non-nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1732544975647,
+      "tag": "0007_add-unique-logins",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1732550796741,
+      "tag": "0008_cascade-campaign",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1732551543236,
+      "tag": "0009_add-timestamps",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1732620178959,
+      "tag": "0010_add-invite-code-and-ui-locale",
+      "breakpoints": true
+    }
+  ]
+}
