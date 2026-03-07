@@ -10,6 +10,7 @@ import Feature from 'ol/Feature';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import GeoJSON from 'ol/format/GeoJSON';
+import Collection from 'ol/Collection';
 import { MultiPoint } from 'ol/geom';
 import { Draw, Modify, Translate } from 'ol/interaction';
 import { createBox, DrawEvent } from 'ol/interaction/Draw';
@@ -51,16 +52,15 @@ export function MapComponent() {
       setPromptConfig({ isOpen: true, resolve, config: fieldConfig });
     });
   }
-  // Add drawing interaction ref
+
   const drawInteractionRef = useRef<any>(null);
 
-  // Function to cancel drawing
   const cancelDrawing = () => {
     if (drawInteractionRef.current) {
       mapRef.current?.removeInteraction(drawInteractionRef.current);
       drawInteractionRef.current = null;
     }
-    toggleEditMode(); // This will clear modify/translate
+    toggleEditMode();
     setDrawMode(null);
     setSelectedShape(null);
   };
@@ -69,7 +69,6 @@ export function MapComponent() {
     if (!mapRef.current || !layersRef.current?.custom) return;
     const map = mapRef.current;
 
-    // Remove existing draw interaction
     if (drawInteractionRef.current) {
       map.removeInteraction(drawInteractionRef.current);
     }
@@ -79,10 +78,10 @@ export function MapComponent() {
 
     switch (shapeType) {
       case 'square':
-        // Create a temporary layer for preview
-        const previewSource = new Vector();
-        const previewLayer = new VectorLayer({
-          source: previewSource,
+        draw = new Draw({
+          source: source!,
+          type: 'Circle',
+          geometryFunction: createBox(),
           style: new Style({
             stroke: new Stroke({
               color: '#00FF00',
@@ -93,15 +92,6 @@ export function MapComponent() {
               color: 'rgba(0, 255, 0, 0.1)',
             }),
           }),
-        });
-
-        // Add preview layer to map
-        map.addLayer(previewLayer);
-
-        draw = new Draw({
-          source: source!,
-          type: 'Circle',
-          geometryFunction: createBox(),
         });
         // // Clean up preview layer when done
         // draw.on('drawend', () => {
@@ -136,7 +126,6 @@ export function MapComponent() {
 
     draw.on('drawend', async (event: DrawEvent) => {
       const newFeature = event.feature;
-      // remove the interaction immediately so the user can't keep clicking
       map.removeInteraction(draw);
       drawInteractionRef.current = null;
 
@@ -148,7 +137,6 @@ export function MapComponent() {
         });
         newFeature.set('shapeType', shapeType);
       } else {
-        // user cancelled, remove the feature that was just drawn
         source?.removeFeature(newFeature);
       }
 
@@ -166,7 +154,6 @@ export function MapComponent() {
     const map = mapRef.current;
     if (!map) return;
 
-    // Cleanup
     if (modifyInteractionRef.current) map.removeInteraction(modifyInteractionRef.current);
     if (translateInteractionRef.current) map.removeInteraction(translateInteractionRef.current);
 
@@ -186,8 +173,7 @@ export function MapComponent() {
         map.addInteraction(transform);
         modifyInteractionRef.current = transform;
       } else {
-        // everything else handled by ol itself
-        const collection = new (require('ol/Collection').default)([feature]);
+        const collection = new Collection([feature]);
 
         const translate = new Translate({ features: collection });
         const modify = new Modify({ features: collection });
@@ -241,12 +227,17 @@ export function MapComponent() {
       }),
     ];
     const customVectorSource = new Vector({
-      url: 'buildings.geojson', // Optional: if you have existing building data
+      url: 'buildings.geojson',
       format: new GeoJSON(),
     });
     // TODO: do this for other types too!
     const roadImage = new Image();
     roadImage.src = '/mud_road.png';
+
+    const miscStyleCache: Record<string, Style> = {};
+    const baseIconCache: Record<string, Icon> = {};
+    const sharedTextFill = new Fill({ color: [0, 0, 0] });
+    const sharedTextStroke = new Stroke({ color: [255, 255, 255], width: 3 });
 
     layersRef.current = {
       landmarks: new VectorLayer({
@@ -257,46 +248,55 @@ export function MapComponent() {
           format: new GeoJSON(),
         }),
         style: (feature) => {
-          if (feature.get('type') == 'Misc') {
-            return new Style({
-              image: new Icon({
-                opacity: 1,
-                // TODO: monstrocity
-                src: (mapIcons['Landmarks'] as any)[feature.get('type') as any] as any,
-              }),
-            });
+          const type = feature.get('type') as string;
+
+          if (type == 'Misc') {
+            if (!miscStyleCache[type]) {
+              miscStyleCache[type] = new Style({
+                image: new Icon({
+                  opacity: 1,
+                  // TODO: monstrocity
+                  src: (mapIcons['Landmarks'] as any)[type] as any,
+                }),
+              });
+            }
+
+            return miscStyleCache[type];
           } // TODO : find a way to return nothing instead of an invisible icon, it would probably be more efficient
-          else if (feature.get('type') == 'Base') {
+          else if (type == 'Base') {
             const isOn = layersStateRef.current.landmarks;
             let image = null;
             let text = null;
 
             if (isOn) {
-              // TODO: do not instance this for each base, we can create a hashmap of colored ones :3
-              image = new Icon({
-                color: (mapColorRef['Landmarks'] as any)[feature.get('type')],
-                src: (mapIcons['Landmarks'] as any)[feature.get('type')],
-              });
+              if (!baseIconCache[type]) {
+                baseIconCache[type] = new Icon({
+                  color: (mapColorRef['Landmarks'] as any)[type],
+                  src: (mapIcons['Landmarks'] as any)[type],
+                });
+              }
+              image = baseIconCache[type];
 
               text = new Text({
-                font: 'bold ' + String(localStorage.labelSize) + 'px "arial narrow", "sans serif"',
+                font: 'bold ' + String(localStorage.labelSize || 12) + 'px "arial narrow", "sans serif"',
                 text: feature.get('label'),
                 textAlign: 'left',
                 textBaseline: 'bottom',
                 offsetX: 10,
-                fill: new Fill({ color: [0, 0, 0] }),
-                stroke: new Stroke({ color: [255, 255, 255], width: 3 }),
+                fill: sharedTextFill,
+                stroke: sharedTextStroke,
               });
             } else {
               // TODO: hacky.. works?
               return null as any;
             }
 
-            return new Style({
-              zIndex: feature.get('type') == 'Server' ? 1000 : undefined,
-              image: image,
-              text: text,
-            });
+            // TODO: no clue what this is??
+            // return new Style({
+            //   zIndex: type == 'Server' ? 1000 : undefined,
+            //   image: image,
+            //   text: text,
+            // });
           }
 
           return null;
@@ -388,6 +388,7 @@ export function MapComponent() {
         window.history.pushState({}, '', newHref);
       }
     });
+
     const menuItems: Item[] = [
       {
         text: 'Center map here',
@@ -446,6 +447,7 @@ export function MapComponent() {
       },
       '-',
     ];
+
     const contextmenu = new ContextMenu({
       width: 170,
       defaultItems: false,
@@ -483,11 +485,16 @@ export function MapComponent() {
     map.addControl(contextmenu);
     mapRef.current = map;
 
-    return () => map.setTarget(undefined);
+    return () => {
+      map.getInteractions().clear();
+      map.getControls().clear();
+      map.getLayers().clear();
+      map.setTarget(undefined);
+    };
   }, []);
 
   // TODO: hacky for map size kek
-  const mainContainer = document.querySelector('main');
+  const mainContainer = typeof document !== 'undefined' ? document.querySelector('main') : null;
 
   return (
     <>
