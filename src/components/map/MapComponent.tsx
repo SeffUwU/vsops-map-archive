@@ -24,6 +24,7 @@ import { useGlobalContext, useTranslation } from '../contexts/global.client.cont
 import { Button } from '../ui/button';
 import { FeatureInfoSheet } from './FeatureInfoSheet';
 import { FeaturePromptDialog } from './FeaturePromptDialog';
+import { VSMap } from '@/types/map/vsmap';
 
 export function MapComponent() {
   const t = useTranslation();
@@ -35,7 +36,7 @@ export function MapComponent() {
   } = useGlobalContext();
   const [inspectData, setInspectData] = useState<Record<string, string> | null>(null);
   const [drawMode, setDrawMode] = useState<string | null>(null);
-  const [selectedShape, setSelectedShape] = useState<'square' | 'circle' | 'polygon' | 'road' | null>(null);
+  const [selectedShape, setSelectedShape] = useState<VSMap.CustomFeatureType | null>(null);
   const [promptConfig, setPromptConfig] = useState<{
     isOpen: boolean;
     resolve: (val: any) => void;
@@ -64,8 +65,8 @@ export function MapComponent() {
     setSelectedShape(null);
   };
 
-  const startBuildingDraw = (shapeType: 'square' | 'circle' | 'polygon' | 'road') => {
-    if (!mapRef.current || !layersRef.current?.buildings) return;
+  const startCustomDraw = (shapeType: VSMap.CustomFeatureType) => {
+    if (!mapRef.current || !layersRef.current?.custom) return;
     const map = mapRef.current;
 
     // Remove existing draw interaction
@@ -74,7 +75,7 @@ export function MapComponent() {
     }
 
     let draw;
-    const source = layersRef.current.buildings.getSource();
+    const source = layersRef.current.custom.getSource();
 
     switch (shapeType) {
       case 'square':
@@ -239,7 +240,7 @@ export function MapComponent() {
         },
       }),
     ];
-    const buildingVectorSource = new Vector({
+    const customVectorSource = new Vector({
       url: 'buildings.geojson', // Optional: if you have existing building data
       format: new GeoJSON(),
     });
@@ -344,9 +345,9 @@ export function MapComponent() {
           });
         },
       }),
-      buildings: new VectorLayer({
+      custom: new VectorLayer({
         className: 'vsBuildings',
-        source: buildingVectorSource,
+        source: customVectorSource,
         style: handleCustomFeatureLayerStyle(mapRef.current),
       }),
     };
@@ -367,7 +368,7 @@ export function MapComponent() {
         layersRef.current.traders,
         layersRef.current.translocators,
         layersRef.current.landmarks,
-        layersRef.current.buildings,
+        layersRef.current.custom,
       ],
       view,
     });
@@ -427,19 +428,19 @@ export function MapComponent() {
         items: [
           {
             text: 'Circle',
-            callback: () => startBuildingDraw('circle'),
+            callback: () => startCustomDraw('circle'),
           },
           {
             text: 'Square',
-            callback: () => startBuildingDraw('square'),
+            callback: () => startCustomDraw('square'),
           },
           {
             text: 'Polygon',
-            callback: () => startBuildingDraw('polygon'),
+            callback: () => startCustomDraw('polygon'),
           },
           {
             text: 'Road',
-            callback: () => startBuildingDraw('road'),
+            callback: () => startCustomDraw('road'),
           },
         ],
       },
@@ -473,7 +474,7 @@ export function MapComponent() {
           },
           {
             text: 'Delete Feature',
-            callback: () => buildingVectorSource.removeFeature(currentFeature as Feature),
+            callback: () => customVectorSource.removeFeature(currentFeature as Feature),
           },
         ]);
       }

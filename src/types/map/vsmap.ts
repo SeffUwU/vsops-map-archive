@@ -13,6 +13,8 @@ export namespace VSMap {
     traders: VectorLayer;
     chunks: VectorLayer;
     translocators: VectorLayer;
-    buildings: VectorLayer;
+    custom: VectorLayer;
   }
+
+  export type CustomFeatureType = 'square' | 'circle' | 'polygon' | 'road';
 }
