@@ -1,0 +1,32 @@
+import type { LocaleType } from '@/locale/text/en';
+
+export enum FeatureTypeEnum {
+  BASE = 'base',
+  SMITHERY = 'smithery',
+  TRADER = 'trader',
+  POINT_OF_INTEREST = 'poi',
+  LIBRARY = 'library',
+  FARM = 'farm',
+  DISTRICT = 'district',
+  BODY_OF_WATER = 'bow',
+  TOWN_HALL = 'town_hall',
+}
+
+export const getFeatureDialogConfig = (t: LocaleType) => {
+  return {
+    fields: [
+      { name: 'name', title: t.dialog.feature.nameTitle, defaultValue: 'Building', type: 'text' },
+      { name: 'description', title: t.dialog.feature.descriptionTitle, defaultValue: '', type: 'text' },
+      {
+        name: 'type',
+        title: t.dialog.feature.descriptionTitle,
+        defaultValue: FeatureTypeEnum.BASE,
+        values: Object.values(FeatureTypeEnum).map((val) => ({
+          value: val,
+          title: t.dialog.feature.selectValues[val],
+        })),
+        type: 'select',
+      },
+    ],
+  } as const;
+};

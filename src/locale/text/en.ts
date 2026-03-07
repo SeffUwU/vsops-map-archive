@@ -1,3 +1,5 @@
+import { FeatureTypeEnum } from '@/types/map/dialog.configs';
+
 export const EnglishLocale = {
   statusTitle: {
     error: 'Error!',
@@ -73,4 +75,24 @@ export const EnglishLocale = {
   ui: {
     initializingContexts: 'Initializing contexts...',
   },
+  dialog: {
+    feature: {
+      nameTitle: 'Name',
+      descriptionTitle: 'Description',
+      selectTypeTitle: 'Type',
+      selectValues: {
+        base: 'Base',
+        bow: 'Body of water',
+        district: 'District',
+        farm: 'Farm',
+        library: 'Library',
+        poi: 'Point of Interest',
+        smithery: 'Smithery',
+        town_hall: 'Town Hall',
+        trader: 'Trader',
+      } as Record<FeatureTypeEnum, string>,
+    },
+  },
 };
+
+export type LocaleType = typeof EnglishLocale;

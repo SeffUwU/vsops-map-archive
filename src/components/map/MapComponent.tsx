@@ -1,56 +1,55 @@
 'use client';
 
+import { mapColorRef, mapIcons, mapMousePosController, vintageStoryWorldGrid } from '@/constants/map.consts';
+import { handleCustomFeatureLayerStyle } from '@/lib/map/custom-feature-styler';
+import { handleCustomTranslocatorStyle } from '@/lib/map/transclocator-feature-styler';
+import { getFeatureDialogConfig } from '@/types/map/dialog.configs';
+import ContextMenu, { Item } from 'ol-contextmenu';
+import Transform from 'ol-ext/interaction/Transform';
+import Feature from 'ol/Feature';
 import Map from 'ol/Map';
 import View from 'ol/View';
-import { MousePosition } from 'ol/control';
-import { toStringXY } from 'ol/coordinate';
-import TileLayer from 'ol/layer/Tile';
-import 'ol/ol.css';
-import XYZ from 'ol/source/XYZ';
-import { TileGrid } from 'ol/tilegrid';
-import { useEffect, useRef, useState } from 'react';
-
-import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
-import { MultiPoint, Polygon } from 'ol/geom';
-import { Vector } from 'ol/source';
-import VectorLayer from 'ol/layer/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
-import { config } from '@/constants/config';
-import { VSMap } from '@/types/map/vsmap';
-import { useGlobalContext } from '../contexts/global.client.context';
-import { Draw } from 'ol/interaction';
-import Feature from 'ol/Feature';
+import { MultiPoint } from 'ol/geom';
+import { Draw, Modify, Translate } from 'ol/interaction';
 import { createBox, DrawEvent } from 'ol/interaction/Draw';
-import ContextMenu from 'ol-contextmenu';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import 'ol/ol.css';
+import { Vector } from 'ol/source';
+import XYZ from 'ol/source/XYZ';
+import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
+import { useEffect, useRef, useState } from 'react';
+import { useGlobalContext, useTranslation } from '../contexts/global.client.context';
 import { Button } from '../ui/button';
-
-const X_OFFSET = 162282;
-const Y_OFFSET = 211883 - 235246 - 188522;
-
-const vsWorldGrid = new TileGrid({
-  extent: [-512000, -512000, 512000, 512000],
-  origin: [-512000 + X_OFFSET, 512000 + Y_OFFSET],
-  resolutions: [512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
-  tileSize: [256, 256],
-});
-
-const mousePos = new MousePosition({
-  coordinateFormat: function (coordinate) {
-    return toStringXY([coordinate![0], -coordinate![1]], 0);
-  },
-  className: 'coords',
-  target: 'mouse-position-out',
-});
+import { FeatureInfoSheet } from './FeatureInfoSheet';
+import { FeaturePromptDialog } from './FeaturePromptDialog';
 
 export function MapComponent() {
+  const t = useTranslation();
+  const featureBuilderDialog = useRef(getFeatureDialogConfig(t));
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const {
     map: { layersRef, mapRef, layersStateRef },
   } = useGlobalContext();
-
+  const [inspectData, setInspectData] = useState<Record<string, string> | null>(null);
   const [drawMode, setDrawMode] = useState<string | null>(null);
-  const [selectedShape, setSelectedShape] = useState<'square' | 'circle' | 'polygon' | null>(null);
+  const [selectedShape, setSelectedShape] = useState<'square' | 'circle' | 'polygon' | 'road' | null>(null);
+  const [promptConfig, setPromptConfig] = useState<{
+    isOpen: boolean;
+    resolve: (val: any) => void;
+    config: DialogBuilder.FieldBuilderConfig;
+  } | null>(null);
+  const modifyInteractionRef = useRef<any>(null);
+  const translateInteractionRef = useRef<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
+  function asyncPrompt<T extends DialogBuilder.FieldBuilderConfig>(fieldConfig: T): Promise<DialogBuilder.Result<T>> {
+    return new Promise((resolve) => {
+      setPromptConfig({ isOpen: true, resolve, config: fieldConfig });
+    });
+  }
   // Add drawing interaction ref
   const drawInteractionRef = useRef<any>(null);
 
@@ -60,11 +59,12 @@ export function MapComponent() {
       mapRef.current?.removeInteraction(drawInteractionRef.current);
       drawInteractionRef.current = null;
     }
+    toggleEditMode(); // This will clear modify/translate
     setDrawMode(null);
     setSelectedShape(null);
   };
 
-  const startBuildingDraw = (shapeType: 'square' | 'circle' | 'polygon') => {
+  const startBuildingDraw = (shapeType: 'square' | 'circle' | 'polygon' | 'road') => {
     if (!mapRef.current || !layersRef.current?.buildings) return;
     const map = mapRef.current;
 
@@ -125,29 +125,85 @@ export function MapComponent() {
           type: 'Polygon',
         });
         break;
+      case 'road':
+        draw = new Draw({
+          source: source!,
+          type: 'MultiLineString',
+        });
+        break;
     }
 
-    draw.on('drawend', (event: DrawEvent) => {
+    draw.on('drawend', async (event: DrawEvent) => {
       const newFeature = event.feature;
+      // remove the interaction immediately so the user can't keep clicking
+      map.removeInteraction(draw);
+      drawInteractionRef.current = null;
 
-      const name = prompt('Enter building name:', 'Building');
+      const result = await asyncPrompt(featureBuilderDialog.current);
 
-      if (name) {
-        newFeature.set('name', name);
-        newFeature.set('type', 'building');
+      if (!result.cancelled) {
+        Object.entries(result.data).forEach(([key, value]) => {
+          newFeature.set(key as keyof typeof result.data, value);
+        });
         newFeature.set('shapeType', shapeType);
+      } else {
+        // user cancelled, remove the feature that was just drawn
+        source?.removeFeature(newFeature);
       }
 
       setDrawMode(null);
       setSelectedShape(null);
-      map.removeInteraction(draw);
-      drawInteractionRef.current = null;
     });
 
     map.addInteraction(draw);
     drawInteractionRef.current = draw;
     setDrawMode('drawing');
     setSelectedShape(shapeType);
+  };
+
+  const toggleEditMode = (feature?: Feature) => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Cleanup
+    if (modifyInteractionRef.current) map.removeInteraction(modifyInteractionRef.current);
+    if (translateInteractionRef.current) map.removeInteraction(translateInteractionRef.current);
+
+    if (!isEditing && feature) {
+      const isSquare = feature.get('shapeType') === 'square';
+
+      if (isSquare) {
+        // only use ol-ext for squares
+        const transform = new Transform({
+          features: [feature],
+          translate: true,
+          stretch: false,
+          scale: true,
+          rotate: true,
+          hitTolerance: 10,
+        });
+        map.addInteraction(transform);
+        modifyInteractionRef.current = transform;
+      } else {
+        // everything else handled by ol itself
+        const collection = new (require('ol/Collection').default)([feature]);
+
+        const translate = new Translate({ features: collection });
+        const modify = new Modify({ features: collection });
+
+        map.addInteraction(translate);
+        map.addInteraction(modify);
+
+        modifyInteractionRef.current = modify;
+        translateInteractionRef.current = translate;
+      }
+
+      setIsEditing(true);
+      setDrawMode('editing');
+    } else {
+      setIsEditing(false);
+      setDrawMode(null);
+    }
   };
 
   useEffect(() => {
@@ -157,47 +213,10 @@ export function MapComponent() {
       source: new XYZ({
         interpolate: false,
         wrapX: false,
-        tileGrid: vsWorldGrid,
+        tileGrid: vintageStoryWorldGrid,
         url: 'https://map.tops.vintagestory.at/data/world/{z}/{x}_{y}.png',
       }),
     });
-
-    let colorsRef = {
-      Traders: {
-        'Artisan trader': [0, 240, 240],
-        'Building materials trader': [255, 0, 0],
-        'Clothing trader': [0, 128, 0],
-        'Commodities trader': [128, 128, 128],
-        'Agriculture trader': [200, 192, 128],
-        'Furniture trader': [255, 128, 0],
-        'Luxuries trader': [0, 0, 255],
-        'Survival goods trader': [255, 255, 0],
-        'Treasure hunter trader': [160, 0, 160],
-        unknown: [48, 48, 48],
-      },
-      Translocators: {
-        Translocator: [192, 0, 192],
-        'Named Translocator': [71, 45, 255],
-        'Spawn Translocator': [0, 192, 192],
-        Teleporter: [229, 57, 53],
-      },
-      Landmarks: {
-        Server: undefined, // This one uses a PNG, we don't want to color it
-        Base: [192, 192, 192],
-        Misc: [224, 224, 224],
-      },
-    };
-
-    let icons = {
-      Traders: `${config.vsmBaseUrl}/assets/icons/waypoints/trader.svg`,
-      Translocators: `${config.vsmBaseUrl}/assets/icons/waypoints/spiral.svg`,
-      Landmarks: {
-        Base: `${config.vsmBaseUrl}/assets/icons/waypoints/home.svg`,
-        Misc: `${config.vsmBaseUrl}/assets/icons/waypoints/star1.svg`,
-        Server: `${config.vsmBaseUrl}/assets/icons/temporal_gear.png`,
-      },
-      'Explored Chunks': `${config.vsmBaseUrl}/assets/icons/default/square.png`,
-    };
 
     let highlightStyleTranslocator = [
       new Style({
@@ -210,7 +229,7 @@ export function MapComponent() {
         image: new Icon({
           color: [255, 192, 255],
           opacity: 1,
-          src: icons['Translocators'],
+          src: mapIcons['Translocators'],
         }),
         geometry: (feature: any) => {
           if (feature) {
@@ -224,6 +243,9 @@ export function MapComponent() {
       url: 'buildings.geojson', // Optional: if you have existing building data
       format: new GeoJSON(),
     });
+    // TODO: do this for other types too!
+    const roadImage = new Image();
+    roadImage.src = '/mud_road.png';
 
     layersRef.current = {
       landmarks: new VectorLayer({
@@ -239,7 +261,7 @@ export function MapComponent() {
               image: new Icon({
                 opacity: 1,
                 // TODO: monstrocity
-                src: (icons['Landmarks'] as any)[feature.get('type') as any] as any,
+                src: (mapIcons['Landmarks'] as any)[feature.get('type') as any] as any,
               }),
             });
           } // TODO : find a way to return nothing instead of an invisible icon, it would probably be more efficient
@@ -251,8 +273,8 @@ export function MapComponent() {
             if (isOn) {
               // TODO: do not instance this for each base, we can create a hashmap of colored ones :3
               image = new Icon({
-                color: (colorsRef['Landmarks'] as any)[feature.get('type')],
-                src: (icons['Landmarks'] as any)[feature.get('type')],
+                color: (mapColorRef['Landmarks'] as any)[feature.get('type')],
+                src: (mapIcons['Landmarks'] as any)[feature.get('type')],
               });
 
               text = new Text({
@@ -291,9 +313,9 @@ export function MapComponent() {
 
           return new Style({
             image: new Icon({
-              color: (colorsRef['Traders'] as any)[feature.get('wares')],
+              color: (mapColorRef['Traders'] as any)[feature.get('wares')],
               opacity: isOn ? 1 : 0,
-              src: icons['Traders'],
+              src: mapIcons['Traders'],
             }),
           });
         },
@@ -305,44 +327,7 @@ export function MapComponent() {
           url: 'translocators.geojson',
           format: new GeoJSON(),
         }),
-        style: function (feature) {
-          let opacity = 1;
-          let isOn = layersStateRef.current.translocators;
-          let tlCol = colorsRef['Translocators']['Translocator'];
-
-          if (feature.get('tag') == 'SPAWN') {
-            tlCol = colorsRef['Translocators']['Spawn Translocator'];
-            // isOn = (showSubLayerItems["Translocators"] as any)["Spawn Translocator"];
-          } else if (feature.get('tag') == 'TP') {
-            tlCol = colorsRef['Translocators']['Teleporter'];
-            // isOn = (showSubLayerItems["Translocators"] as any)["Teleporter"];
-          } else if (feature.get('label') != undefined && feature.get('label').length > 0) {
-            tlCol = colorsRef['Translocators']['Named Translocator'];
-            // isOn = (showSubLayerItems["Translocators"] as any)["Named Translocator"];
-          }
-          if (!isOn) {
-            opacity = 0;
-          }
-          return [
-            new Style({
-              stroke: new Stroke({
-                color: tlCol.concat(opacity),
-                width: 2,
-              }),
-            }),
-            new Style({
-              image: new Icon({
-                color: tlCol,
-                opacity: opacity,
-                src: icons['Translocators'],
-              }),
-              geometry: function (feature) {
-                let coordinates = (feature.getGeometry()! as any).getCoordinates();
-                return new MultiPoint(coordinates);
-              },
-            }),
-          ];
-        },
+        style: handleCustomTranslocatorStyle(layersStateRef.current),
       }),
       chunks: new VectorLayer({
         className: 'vsGenChunks',
@@ -362,59 +347,7 @@ export function MapComponent() {
       buildings: new VectorLayer({
         className: 'vsBuildings',
         source: buildingVectorSource,
-        style: (feature) => {
-          const geometryType = feature.getGeometry()!.getType();
-
-          // Different styles based on geometry type
-          switch (geometryType) {
-            case 'Polygon':
-              return new Style({
-                fill: new Fill({
-                  color: 'rgba(255, 165, 0, 0.3)', // Orange with transparency
-                }),
-                stroke: new Stroke({
-                  color: '#FF8C00', // Dark orange
-                  width: 2,
-                }),
-                text: new Text({
-                  text: feature.get('name') || '',
-                  font: '12px Arial',
-                  fill: new Fill({ color: '#000' }),
-                  stroke: new Stroke({ color: '#fff', width: 2 }),
-                  offsetY: -15,
-                }),
-              });
-
-            case 'Circle':
-              return new Style({
-                fill: new Fill({
-                  color: 'rgba(0, 191, 255, 0.3)', // Deep sky blue with transparency
-                }),
-                stroke: new Stroke({
-                  color: '#00BFFF',
-                  width: 2,
-                }),
-                text: new Text({
-                  text: feature.get('name') || '',
-                  font: '12px Arial',
-                  fill: new Fill({ color: '#000' }),
-                  stroke: new Stroke({ color: '#fff', width: 2 }),
-                  offsetY: -15,
-                }),
-              });
-
-            default:
-              return new Style({
-                fill: new Fill({
-                  color: 'rgba(255, 255, 255, 0.3)',
-                }),
-                stroke: new Stroke({
-                  color: '#FFFFFF',
-                  width: 2,
-                }),
-              });
-          }
-        },
+        style: handleCustomFeatureLayerStyle(mapRef.current),
       }),
     };
 
@@ -427,7 +360,7 @@ export function MapComponent() {
 
     const map = new Map({
       target: mapContainerRef.current,
-      controls: [mousePos],
+      controls: [mapMousePosController],
       layers: [
         wsWorld,
         layersRef.current.chunks,
@@ -454,80 +387,94 @@ export function MapComponent() {
         window.history.pushState({}, '', newHref);
       }
     });
+    const menuItems: Item[] = [
+      {
+        text: 'Center map here',
+        callback: (obj, map) => {
+          map.getView().setCenter(obj.coordinate);
+        },
+      },
+      {
+        text: 'Go To',
+        callback: (_obj, map) => {
+          const matches = prompt('Coordinates comma or space separated')?.match(/(-?\d+)\s*[,\s]\s*(-?\d+)/);
+          if (!matches) {
+            return alert('invalid coordinate format');
+          }
+
+          map.getView().animate({
+            center: [parseInt(matches[0]), parseInt(matches[1])],
+            duration: 700,
+          });
+        },
+      },
+      {
+        text: 'Inspect',
+        callback: (obj, map) => {
+          const pixel = map.getPixelFromCoordinate(obj.coordinate);
+
+          const feature = map.forEachFeatureAtPixel(pixel, (feat) => feat);
+
+          if (feature) {
+            const { geometry, z, ...rest } = feature.getProperties();
+            setInspectData(rest);
+          }
+        },
+      },
+      '-',
+      {
+        text: 'Create',
+        items: [
+          {
+            text: 'Circle',
+            callback: () => startBuildingDraw('circle'),
+          },
+          {
+            text: 'Square',
+            callback: () => startBuildingDraw('square'),
+          },
+          {
+            text: 'Polygon',
+            callback: () => startBuildingDraw('polygon'),
+          },
+          {
+            text: 'Road',
+            callback: () => startBuildingDraw('road'),
+          },
+        ],
+      },
+      '-',
+    ];
     const contextmenu = new ContextMenu({
       width: 170,
       defaultItems: false,
-      items: [
-        {
-          text: 'Center map here',
-          callback: (obj, map) => {
-            map.getView().setCenter(obj.coordinate);
-          },
-        },
-        {
-          text: 'Go To',
-          callback: (_obj, map) => {
-            const matches = prompt('Coordinates comma or space separated')?.match(/(-?\d+)\s*[,\s]\s*(-?\d+)/);
-            if (!matches) {
-              return alert('invalid coordinate format');
-            }
-
-            map.getView().animate({
-              center: [parseInt(matches[0]), parseInt(matches[1])],
-              duration: 700,
-            });
-          },
-        },
-        {
-          text: 'Export',
-          callback: () => {
-            const format = new GeoJSON();
-            const featues = buildingVectorSource.getFeatures();
-            const str = format.writeFeatures(featues);
-            console.log(str);
-          },
-        },
-        '-',
-        {
-          text: 'Create',
-          items: [
-            {
-              text: 'Circle',
-              callback: () => startBuildingDraw('circle'),
-            },
-            {
-              text: 'Square',
-              callback: () => startBuildingDraw('square'),
-            },
-            {
-              text: 'Polygon',
-              callback: () => startBuildingDraw('polygon'),
-            },
-          ],
-        },
-      ],
+      items: menuItems,
     });
 
     contextmenu.on('beforeopen', (evt) => {
       const currentFeature = map.forEachFeatureAtPixel(evt.pixel, (ft) => ft);
+      contextmenu.clear();
+      contextmenu.extend(menuItems);
       if (!currentFeature) return;
 
       const type = currentFeature.getGeometry()?.getType();
       const featureProps = currentFeature.getProperties();
       const isStandardFeatureSet =
-        featureProps.type === 'Base' || 'wares' in featureProps || type === 'LineString' || !!featureProps?.tag;
+        featureProps.type === 'Base' || 'wares' in featureProps || type === 'MultiLineString' || !!featureProps?.tag;
 
       if (isStandardFeatureSet) return;
-
       if (currentFeature && currentFeature.getGeometry()?.getType()) {
         console.log('[FEATURE PROPS]', currentFeature.getProperties());
 
         contextmenu.extend([
           {
+            text: 'Edit Shape',
+            callback: () => toggleEditMode(currentFeature as Feature),
+          },
+          {
             text: 'Delete Feature',
             callback: () => buildingVectorSource.removeFeature(currentFeature as Feature),
           },
-          '-',
         ]);
       }
     });
@@ -543,10 +490,22 @@ export function MapComponent() {
 
   return (
     <>
-      <div id="mouse-position-out" className="absolute top-4 left-20 bg-white z-30 p-4 rounded-md shadow-sm">
-        <Button onClick={cancelDrawing}>Cancel</Button>
-      </div>
-
+      {drawMode && (
+        <div id="mouse-position-out" className="absolute top-4 left-20 bg-white z-30 p-4 rounded-md shadow-sm">
+          <Button onClick={cancelDrawing}>Cancel</Button>
+        </div>
+      )}
+      <FeatureInfoSheet data={inspectData} setInspectData={setInspectData} />
+      {promptConfig && (
+        <FeaturePromptDialog
+          isOpen={promptConfig.isOpen}
+          onClose={(val) => {
+            promptConfig.resolve(val);
+            setPromptConfig(null);
+          }}
+          config={promptConfig.config}
+        />
+      )}
       <div
         ref={mapContainerRef}
         className="w-full h-full flex items-center justify-center"
