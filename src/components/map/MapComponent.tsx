@@ -11,13 +11,18 @@ import { TileGrid } from 'ol/tilegrid';
 import { useEffect, useRef, useState } from 'react';
 
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
-import { MultiPoint } from 'ol/geom';
+import { MultiPoint, Polygon } from 'ol/geom';
 import { Vector } from 'ol/source';
 import VectorLayer from 'ol/layer/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
 import { config } from '@/constants/config';
 import { VSMap } from '@/types/map/vsmap';
 import { useGlobalContext } from '../contexts/global.client.context';
+import { Draw } from 'ol/interaction';
+import Feature from 'ol/Feature';
+import { createBox, DrawEvent } from 'ol/interaction/Draw';
+import ContextMenu from 'ol-contextmenu';
+import { Button } from '../ui/button';
 
 const X_OFFSET = 162282;
 const Y_OFFSET = 211883 - 235246 - 188522;
@@ -28,6 +33,7 @@ const vsWorldGrid = new TileGrid({
   resolutions: [512, 256, 128, 64, 32, 16, 8, 4, 2, 1],
   tileSize: [256, 256],
 });
+
 const mousePos = new MousePosition({
   coordinateFormat: function (coordinate) {
     return toStringXY([coordinate![0], -coordinate![1]], 0);
@@ -37,33 +43,115 @@ const mousePos = new MousePosition({
 });
 
 export function MapComponent() {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const layersRef = useRef<VSMap.VectorLayersRef | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
   const {
-    map: { toggleState },
+    map: { layersRef, mapRef, layersStateRef },
   } = useGlobalContext();
 
-  const layersStateRef = useRef<VSMap.TogglesState>(toggleState);
+  const [drawMode, setDrawMode] = useState<string | null>(null);
+  const [selectedShape, setSelectedShape] = useState<'square' | 'circle' | 'polygon' | null>(null);
 
-  useEffect(() => {
-    if (!layersRef.current) {
-      return;
+  // Add drawing interaction ref
+  const drawInteractionRef = useRef<any>(null);
+
+  // Function to cancel drawing
+  const cancelDrawing = () => {
+    if (drawInteractionRef.current) {
+      mapRef.current?.removeInteraction(drawInteractionRef.current);
+      drawInteractionRef.current = null;
+    }
+    setDrawMode(null);
+    setSelectedShape(null);
+  };
+
+  const startBuildingDraw = (shapeType: 'square' | 'circle' | 'polygon') => {
+    if (!mapRef.current || !layersRef.current?.buildings) return;
+    const map = mapRef.current;
+
+    // Remove existing draw interaction
+    if (drawInteractionRef.current) {
+      map.removeInteraction(drawInteractionRef.current);
     }
 
-    (Object.keys(toggleState) as Array<keyof VSMap.TogglesState>).forEach((key) => {
-      layersStateRef.current[key] = toggleState[key];
+    let draw;
+    const source = layersRef.current.buildings.getSource();
+
+    switch (shapeType) {
+      case 'square':
+        // Create a temporary layer for preview
+        const previewSource = new Vector();
+        const previewLayer = new VectorLayer({
+          source: previewSource,
+          style: new Style({
+            stroke: new Stroke({
+              color: '#00FF00',
+              width: 2,
+              lineDash: [10, 10],
+            }),
+            fill: new Fill({
+              color: 'rgba(0, 255, 0, 0.1)',
+            }),
+          }),
+        });
+
+        // Add preview layer to map
+        map.addLayer(previewLayer);
+
+        draw = new Draw({
+          source: source!,
+          type: 'Circle',
+          geometryFunction: createBox(),
+        });
+        // // Clean up preview layer when done
+        // draw.on('drawend', () => {
+        //   map.removeLayer(previewLayer);
+        // });
+
+        // draw.on('drawabort', () => {
+        //   map.removeLayer(previewLayer);
+        // });
+        break;
+
+      case 'circle':
+        draw = new Draw({
+          source: source!,
+          type: 'Circle',
+        });
+        break;
+
+      case 'polygon':
+        draw = new Draw({
+          source: source!,
+          type: 'Polygon',
+        });
+        break;
+    }
+
+    draw.on('drawend', (event: DrawEvent) => {
+      const newFeature = event.feature;
+
+      const name = prompt('Enter building name:', 'Building');
+
+      if (name) {
+        newFeature.set('name', name);
+        newFeature.set('type', 'building');
+        newFeature.set('shapeType', shapeType);
+      }
+
+      setDrawMode(null);
+      setSelectedShape(null);
+      map.removeInteraction(draw);
+      drawInteractionRef.current = null;
     });
 
-    const { chunks, landmarks, traders, translocators } = layersRef.current;
-
-    chunks.changed();
-    landmarks.changed();
-    traders.changed();
-    translocators.changed();
-  }, [toggleState]);
+    map.addInteraction(draw);
+    drawInteractionRef.current = draw;
+    setDrawMode('drawing');
+    setSelectedShape(shapeType);
+  };
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapContainerRef.current) return;
 
     const wsWorld = new TileLayer({
       source: new XYZ({
@@ -132,6 +220,10 @@ export function MapComponent() {
         },
       }),
     ];
+    const buildingVectorSource = new Vector({
+      url: 'buildings.geojson', // Optional: if you have existing building data
+      format: new GeoJSON(),
+    });
 
     layersRef.current = {
       landmarks: new VectorLayer({
@@ -267,6 +359,63 @@ export function MapComponent() {
           });
         },
       }),
+      buildings: new VectorLayer({
+        className: 'vsBuildings',
+        source: buildingVectorSource,
+        style: (feature) => {
+          const geometryType = feature.getGeometry()!.getType();
+
+          // Different styles based on geometry type
+          switch (geometryType) {
+            case 'Polygon':
+              return new Style({
+                fill: new Fill({
+                  color: 'rgba(255, 165, 0, 0.3)', // Orange with transparency
+                }),
+                stroke: new Stroke({
+                  color: '#FF8C00', // Dark orange
+                  width: 2,
+                }),
+                text: new Text({
+                  text: feature.get('name') || '',
+                  font: '12px Arial',
+                  fill: new Fill({ color: '#000' }),
+                  stroke: new Stroke({ color: '#fff', width: 2 }),
+                  offsetY: -15,
+                }),
+              });
+
+            case 'Circle':
+              return new Style({
+                fill: new Fill({
+                  color: 'rgba(0, 191, 255, 0.3)', // Deep sky blue with transparency
+                }),
+                stroke: new Stroke({
+                  color: '#00BFFF',
+                  width: 2,
+                }),
+                text: new Text({
+                  text: feature.get('name') || '',
+                  font: '12px Arial',
+                  fill: new Fill({ color: '#000' }),
+                  stroke: new Stroke({ color: '#fff', width: 2 }),
+                  offsetY: -15,
+                }),
+              });
+
+            default:
+              return new Style({
+                fill: new Fill({
+                  color: 'rgba(255, 255, 255, 0.3)',
+                }),
+                stroke: new Stroke({
+                  color: '#FFFFFF',
+                  width: 2,
+                }),
+              });
+          }
+        },
+      }),
     };
 
     const view = new View({
@@ -277,7 +426,7 @@ export function MapComponent() {
     });
 
     const map = new Map({
-      target: mapRef.current,
+      target: mapContainerRef.current,
       controls: [mousePos],
       layers: [
         wsWorld,
@@ -285,6 +434,7 @@ export function MapComponent() {
         layersRef.current.traders,
         layersRef.current.translocators,
         layersRef.current.landmarks,
+        layersRef.current.buildings,
       ],
       view,
     });
@@ -304,17 +454,108 @@ export function MapComponent() {
         window.history.pushState({}, '', newHref);
       }
     });
+    const contextmenu = new ContextMenu({
+      width: 170,
+      defaultItems: false,
+      items: [
+        {
+          text: 'Center map here',
+          callback: (obj, map) => {
+            map.getView().setCenter(obj.coordinate);
+          },
+        },
+        {
+          text: 'Go To',
+          callback: (_obj, map) => {
+            const matches = prompt('Coordinates comma or space separated')?.match(/(-?\d+)\s*[,\s]\s*(-?\d+)/);
+            if (!matches) {
+              return alert('invalid coordinate format');
+            }
+
+            map.getView().animate({
+              center: [parseInt(matches[0]), parseInt(matches[1])],
+              duration: 700,
+            });
+          },
+        },
+        {
+          text: 'Export',
+          callback: () => {
+            const format = new GeoJSON();
+            const featues = buildingVectorSource.getFeatures();
+            const str = format.writeFeatures(featues);
+            console.log(str);
+          },
+        },
+        '-',
+        {
+          text: 'Create',
+          items: [
+            {
+              text: 'Circle',
+              callback: () => startBuildingDraw('circle'),
+            },
+            {
+              text: 'Square',
+              callback: () => startBuildingDraw('square'),
+            },
+            {
+              text: 'Polygon',
+              callback: () => startBuildingDraw('polygon'),
+            },
+          ],
+        },
+      ],
+    });
+
+    contextmenu.on('beforeopen', (evt) => {
+      const currentFeature = map.forEachFeatureAtPixel(evt.pixel, (ft) => ft);
+      if (!currentFeature) return;
+
+      const type = currentFeature.getGeometry()?.getType();
+      const featureProps = currentFeature.getProperties();
+      const isStandardFeatureSet =
+        featureProps.type === 'Base' || 'wares' in featureProps || type === 'LineString' || !!featureProps?.tag;
+
+      if (isStandardFeatureSet) return;
+
+      if (currentFeature && currentFeature.getGeometry()?.getType()) {
+        console.log('[FEATURE PROPS]', currentFeature.getProperties());
+
+        contextmenu.extend([
+          {
+            text: 'Delete Feature',
+            callback: () => buildingVectorSource.removeFeature(currentFeature as Feature),
+          },
+          '-',
+        ]);
+      }
+    });
+
+    map.addControl(contextmenu);
+    mapRef.current = map;
 
     return () => map.setTarget(undefined);
   }, []);
+
+  // TODO: hacky for map size kek
+  const mainContainer = document.querySelector('main');
+
   return (
-    <div
-      ref={mapRef}
-      style={{
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: '#000',
-      }}
-    />
+    <>
+      <div id="mouse-position-out" className="absolute top-4 left-20 bg-white z-30 p-4 rounded-md shadow-sm">
+        <Button onClick={cancelDrawing}>Cancel</Button>
+      </div>
+
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full flex items-center justify-center"
+        style={{
+          height: mainContainer?.clientHeight,
+          width: mainContainer?.clientWidth,
+          backgroundColor: '#000',
+        }}
+      />
+    </>
   );
 }

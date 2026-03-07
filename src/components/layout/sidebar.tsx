@@ -54,7 +54,7 @@ export function Sidebar() {
     <>
       <div
         className={cn(
-          'h-screen bg-slate-50 dark:bg-slate-800 w-12 border-r-2 items-start flex-col justify-between animate-in duration-200 hidden md:flex',
+          'h-screen bg-orange-100 dark:bg-slate-800 w-12 border-r-2 border-r-orange-200 items-start flex-col justify-between animate-in duration-200 hidden md:flex',
           {
             'w-40': expanded,
           },

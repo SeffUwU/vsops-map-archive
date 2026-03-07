@@ -81,7 +81,7 @@ body {
   }
 
   .content-padding {
-    @apply p-2
+    @apply p-2;
   }
 }
 
@@ -129,4 +129,14 @@ body {
   * {
     scrollbar-width: thin;
   }
+}
+
+.coords {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+}
+
+.ol-ctx-menu-container {
+  @apply !bg-orange-100;
 }

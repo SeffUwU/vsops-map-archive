@@ -2,10 +2,20 @@
 
 import { EnglishLocale } from '@/locale/text/en';
 import { TokenPayload } from '@/types/jwt/token.payload.type';
-import { createContext, Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  Dispatch,
+  MutableRefObject,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import useLocalStorageState from 'use-local-storage-state';
 import { LoadingSpinner } from '../ui/loader';
 import { VSMap } from '@/types/map/vsmap';
+import Map from 'ol/Map';
 
 const globalContextValue = {
   ui: {
@@ -20,6 +30,9 @@ const globalContextValue = {
   map: {
     toggleState: {} as VSMap.TogglesState,
     bindMapLayerToggle: (name: keyof VSMap.TogglesState) => () => {},
+    layersRef: {} as MutableRefObject<VSMap.VectorLayersRef | null>,
+    mapRef: {} as MutableRefObject<Map | null>,
+    layersStateRef: {} as MutableRefObject<VSMap.TogglesState>,
   },
 };
 
@@ -34,17 +47,29 @@ export function GlobalContextProvider({
     storageSync: true,
     defaultValue: false,
   });
+
   const [toggleState, setTogglesState] = useState<VSMap.TogglesState>({
     chunks: false,
     landmarks: true,
     traders: false,
     translocators: false,
   });
+  const layersStateRef = useRef<VSMap.TogglesState>(toggleState);
+  const layersRef = useRef<VSMap.VectorLayersRef | null>(null);
+  const mapRef = useRef<Map | null>(null);
 
   const [loading, setLoading] = useState(true);
 
-  const bindMapLayerToggle = (name: keyof VSMap.TogglesState) => (): void =>
-    setTogglesState((prev) => ({ ...prev, [name]: !prev[name] }));
+  const bindMapLayerToggle = (name: keyof VSMap.TogglesState) => (): void => {
+    setTogglesState((prev) => {
+      const newVal = !prev[name];
+
+      return { ...prev, [name]: newVal };
+    });
+
+    layersStateRef.current[name] = !layersStateRef.current[name];
+    layersRef.current && layersRef.current[name]?.changed();
+  };
 
   useEffect(() => {
     setLoading(false);
@@ -70,7 +95,7 @@ export function GlobalContextProvider({
           locale,
           loading,
         },
-        map: { toggleState, bindMapLayerToggle },
+        map: { toggleState, bindMapLayerToggle, layersRef, mapRef, layersStateRef },
         user: user ?? ({} as TokenPayload),
       }}
     >

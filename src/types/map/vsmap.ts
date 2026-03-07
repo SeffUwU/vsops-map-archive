@@ -13,5 +13,6 @@ export namespace VSMap {
     traders: VectorLayer;
     chunks: VectorLayer;
     translocators: VectorLayer;
+    buildings: VectorLayer;
   }
 }
