@@ -8,7 +8,7 @@ namespace DialogBuilder {
     fields: readonly (TextField | SelectField)[];
   };
 
-  type MapFieldsToData<T extends FieldBuilderConfig> = {
+  export type MapFieldsToData<T extends FieldBuilderConfig> = {
     [K in T['fields'][number]['name']]: string;
   };
 
@@ -21,10 +21,4 @@ namespace DialogBuilder {
         cancelled: true;
         data: null;
       };
-}
-
-async function asyncPrompt<T extends DialogBuilder.FieldBuilderConfig>(
-  fieldConfig: T,
-): Promise<DialogBuilder.Result<T>> {
-  return {} as any;
 }

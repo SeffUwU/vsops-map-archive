@@ -52,6 +52,7 @@ export function MapComponent() {
     isOpen: boolean;
     resolve: (val: any) => void;
     config: DialogBuilder.FieldBuilderConfig;
+    currentValues?: Record<string, string>; // TODO: fix types
   } | null>(null);
   const modifyInteractionRef = useRef<any>(null);
   const translateInteractionRef = useRef<any>(null);
@@ -59,9 +60,12 @@ export function MapComponent() {
   // const selectedTLRef = useRef<Feature | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  function asyncPrompt<T extends DialogBuilder.FieldBuilderConfig>(fieldConfig: T): Promise<DialogBuilder.Result<T>> {
+  function asyncPrompt<T extends DialogBuilder.FieldBuilderConfig>(
+    fieldConfig: T,
+    currentValues?: DialogBuilder.MapFieldsToData<T>,
+  ): Promise<DialogBuilder.Result<T>> {
     return new Promise((resolve) => {
-      setPromptConfig({ isOpen: true, resolve, config: fieldConfig });
+      setPromptConfig({ isOpen: true, resolve, config: fieldConfig, currentValues });
     });
   }
 
@@ -530,7 +534,7 @@ export function MapComponent() {
     });
 
     contextmenu.on('beforeopen', (evt) => {
-      const currentFeature = map.forEachFeatureAtPixel(evt.pixel, (ft) => ft);
+      const currentFeature = map.forEachFeatureAtPixel(evt.pixel, (ft) => ft) as Feature;
       contextmenu.clear();
       contextmenu.extend(menuItems);
 
@@ -547,6 +551,34 @@ export function MapComponent() {
           {
             text: 'Edit Shape',
             callback: () => toggleEditMode(currentFeature as Feature),
+          },
+          {
+            text: 'Edit Feature',
+            callback: async () => {
+              const result = await asyncPrompt(featureBuilderDialog.current, currentFeature.getProperties() as any);
+
+              if (!result.cancelled) {
+                Object.entries(result.data).forEach(([key, value]) => {
+                  currentFeature.set(key as keyof typeof result.data, value);
+                });
+                console.log(result.data);
+
+                const { geometryJson, propertiesJson } = transformAndPrepareFeatureForSave(currentFeature, false);
+                const response = await updateMapCustomFeature(
+                  currentFeature.getId() as string,
+                  geometryJson,
+                  propertiesJson,
+                );
+
+                if (!response.is_error) {
+                  currentFeature.setId(response.value.id);
+
+                  Object.entries(response.value.properties).forEach(([key, value]) => {
+                    currentFeature.set(key as keyof typeof result.data, value);
+                  });
+                }
+              }
+            },
           },
           {
             text: 'Delete Feature',
@@ -589,6 +621,7 @@ export function MapComponent() {
             setPromptConfig(null);
           }}
           config={promptConfig.config}
+          currentValues={promptConfig.currentValues}
         />
       )}
       <div

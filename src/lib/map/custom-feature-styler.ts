@@ -52,7 +52,27 @@ export const handleCustomFeatureLayerStyle = (map: Map | null) => (feature: Feat
           // },
         });
       }
-    case 'Polygon':
+    case 'Circle':
+    case 'Polygon': {
+      if (feature.get('shapeType') === 'circle') {
+        return new Style({
+          fill: new Fill({
+            color: 'rgba(0, 191, 255, 0.3)', // Deep sky blue with transparency
+          }),
+          stroke: new Stroke({
+            color: '#00BFFF',
+            width: 2,
+          }),
+          text: new Text({
+            text: feature.get('name') || '',
+            font: '12px Arial',
+            fill: new Fill({ color: '#000' }),
+            stroke: new Stroke({ color: '#fff', width: 2 }),
+            offsetY: -15,
+          }),
+        });
+      }
+
       return new Style({
         fill: new Fill({
           color: 'rgba(255, 165, 0, 0.3)',
@@ -69,24 +89,7 @@ export const handleCustomFeatureLayerStyle = (map: Map | null) => (feature: Feat
           offsetY: -15,
         }),
       });
-
-    case 'Circle':
-      return new Style({
-        fill: new Fill({
-          color: 'rgba(0, 191, 255, 0.3)', // Deep sky blue with transparency
-        }),
-        stroke: new Stroke({
-          color: '#00BFFF',
-          width: 2,
-        }),
-        text: new Text({
-          text: feature.get('name') || '',
-          font: '12px Arial',
-          fill: new Fill({ color: '#000' }),
-          stroke: new Stroke({ color: '#fff', width: 2 }),
-          offsetY: -15,
-        }),
-      });
+    }
 
     default:
       return new Style({

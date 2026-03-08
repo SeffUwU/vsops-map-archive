@@ -9,13 +9,14 @@ interface PromptProps {
   isOpen: boolean;
   onClose: (name: DialogBuilder.Result<any>) => void;
   config: DialogBuilder.FieldBuilderConfig;
+  currentValues?: Record<string, string>;
 }
 
-export function FeaturePromptDialog({ isOpen, onClose, config }: PromptProps) {
+export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: PromptProps) {
   const [value, setValue] = useState(
     config.fields.reduce(
       (acc, field) => {
-        acc[field.name] = field.defaultValue;
+        acc[field.name] = currentValues ? currentValues[field.name] : field.defaultValue;
         return acc;
       },
       {} as Record<string, string>,
@@ -57,7 +58,10 @@ export function FeaturePromptDialog({ isOpen, onClose, config }: PromptProps) {
                     <Label htmlFor="name" className="text-right">
                       {field.title}
                     </Label>
-                    <Select value={value[field.name]}>
+                    <Select
+                      value={value[field.name]}
+                      onValueChange={(v) => setValue((prev) => ({ ...prev, [field.name]: v }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Type" />
                       </SelectTrigger>
