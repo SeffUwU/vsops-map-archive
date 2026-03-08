@@ -5,26 +5,7 @@ import { cn } from '@/lib/utils';
 import { updateUiLanguage } from '@/server/actions/users/updateUserUiLanguage';
 import { AllowedLocale } from '@/types/enums/allowed-locale.enum';
 import { Separator } from '@radix-ui/react-separator';
-import {
-  Backpack,
-  ChevronLeft,
-  ChevronRight,
-  CircleUserRound,
-  ClipboardList,
-  House,
-  Languages,
-  Map,
-  Menu,
-  Moon,
-  PlaneTakeoff,
-  Square,
-  Store,
-  Sun,
-  TentTree,
-  Users,
-} from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { ChevronLeft, ChevronRight, House, Languages, Map, Menu, Moon, Store, Sun, User, Users } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { DebugButtons } from '../admin/debug.buttons';
 import { useContextUser, useGlobalContext, useTranslation } from '../contexts/global.client.context';
@@ -37,10 +18,10 @@ export function Sidebar() {
       sidebar: { expanded, setExpanded },
       loading,
     },
-    map: { bindMapLayerToggle },
+    map: { bindMapLayerToggle, mapRef },
   } = useGlobalContext();
   const t = useTranslation();
-  const { uiLocale } = useContextUser();
+  const user = useContextUser();
   const router = useRouter();
   const { toggleTheme, isDarkModeEnabled } = useDarkMode();
   const className = cn('w-full flex flex-row', { 'justify-start': expanded });
@@ -50,11 +31,13 @@ export function Sidebar() {
     return loading;
   }
 
+  console.log(user);
+
   return (
     <>
       <div
         className={cn(
-          'h-screen bg-orange-100 dark:bg-slate-800 w-12 border-r-2 border-r-orange-200 items-start flex-col justify-between animate-in duration-200 hidden md:flex',
+          'h-screen dark:bg-slate-800 w-12 border-r-2  items-start flex-col justify-between animate-in duration-200 hidden md:flex',
           {
             'w-40': expanded,
           },
@@ -64,10 +47,10 @@ export function Sidebar() {
         }}
       >
         <div className="flex flex-col px-2 gap-2 w-full pt-2">
-          <Link href={'/'} className="w-full flex items-center justify-center">
+          {/* <Link href={'/'} className="w-full flex items-center justify-center">
             <Image src={'/globe.svg'} alt="Main Page" className="dark:hidden" width={48} height={48} />
             <Image src={'/globe.svg'} alt="Main Page" className="hidden dark:block" width={48} height={48} />
-          </Link>
+          </Link> */}
 
           <Separator orientation="horizontal" />
           <SideBarButton
@@ -97,27 +80,18 @@ export function Sidebar() {
             {...{
               expanded,
               className,
-              title: t.sidebar.users,
+              title: t.sidebar.landmarks,
               onClick: bindMapLayerToggle('landmarks'),
             }}
           >
             <House />
           </SideBarButton>
+
           <SideBarButton
             {...{
               expanded,
               className,
-              title: t.sidebar.users,
-              onClick: bindMapLayerToggle('chunks'),
-            }}
-          >
-            <Square />
-          </SideBarButton>
-          <SideBarButton
-            {...{
-              expanded,
-              className,
-              title: t.sidebar.users,
+              title: t.sidebar.traders,
               onClick: bindMapLayerToggle('traders'),
             }}
           >
@@ -127,11 +101,13 @@ export function Sidebar() {
             {...{
               expanded,
               className,
-              title: t.sidebar.users,
+              title: t.sidebar.translocators,
               onClick: bindMapLayerToggle('translocators'),
             }}
           >
-            TLs
+            <div className="rounded-full border-slate-300 border-2 p-1 text-xs w-8 h-8 flex justify-center items-center">
+              TLs
+            </div>
           </SideBarButton>
         </div>
         <div className="flex flex-col px-2 gap-2 w-full">
@@ -166,6 +142,19 @@ export function Sidebar() {
           >
             <Languages />
           </SideBarButton>
+          {user && (
+            <SideBarButton
+              {...{
+                expanded,
+                className,
+                title: t.sidebar.language,
+                href: '#',
+              }}
+            >
+              <User className="text-green-500" />
+            </SideBarButton>
+          )}
+
           {/* <SideBarButton
             {...{
               expanded,

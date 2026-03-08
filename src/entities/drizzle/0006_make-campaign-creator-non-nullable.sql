@@ -1,1 +1,0 @@
-ALTER TABLE "dnd_tracker"."campaigns" ALTER COLUMN "creatorId" SET NOT NULL;

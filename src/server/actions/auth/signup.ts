@@ -18,10 +18,17 @@ import { redirect } from 'next/navigation';
 export async function signup({
   login,
   password,
+  inviteCode,
 }: {
   login: string;
   password: string;
+  inviteCode: string;
 }): ActionResponse<Omit<IUser, 'passwordHash'>> {
+  // TODO: temp
+  if (inviteCode !== 'TEST') {
+    return ServerActionError(HttpStatusCode.Forbidden, ErrorCode.InvalidSignUpCode, AllowedLocale.en);
+  }
+
   const foundUser = await db.query.users.findFirst({
     where: eq(users.login, login),
   });

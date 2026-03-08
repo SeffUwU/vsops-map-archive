@@ -13,12 +13,13 @@ import { useState } from 'react';
 
 export default function SignUpForm() {
   const [login, setLogin] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setIsLoading] = useState(false);
   const t = getTranslation();
 
   const register = async () => {
-    const response = await signup({ login, password });
+    const response = await signup({ login, password, inviteCode });
 
     if (response.is_error) {
       toast({
@@ -44,11 +45,10 @@ export default function SignUpForm() {
       <CardContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">{t.capitalizedWords.email}</Label>
+            <Label htmlFor="login">{t.capitalizedWords.login}</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
+              id="login"
+              type="login"
               required
               value={login}
               onChange={(e) => setLogin(e.target.value)}
@@ -63,6 +63,17 @@ export default function SignUpForm() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">{t.capitalizedWords.inviteCode}</Label>
+            <Input
+              id="inviteCode"
+              type="password"
+              required
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
               disabled={loading}
             />
           </div>

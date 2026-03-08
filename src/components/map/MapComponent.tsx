@@ -2,15 +2,26 @@
 
 import { mapColorRef, mapIcons, mapMousePosController, vintageStoryWorldGrid } from '@/constants/map.consts';
 import { handleCustomFeatureLayerStyle } from '@/lib/map/custom-feature-styler';
+import {
+  isStandartFeatureSet,
+  saveModifyTranslateFeatures,
+  transformAndPrepareFeatureForSave,
+} from '@/lib/map/map.utils';
 import { handleCustomTranslocatorStyle } from '@/lib/map/transclocator-feature-styler';
+import {
+  addMapCustomMapFeature,
+  deleteCustomMapFeature,
+  updateMapCustomFeature,
+} from '@/server/actions/map/map.actions';
 import { getFeatureDialogConfig } from '@/types/map/dialog.configs';
+import { VSMap } from '@/types/map/vsmap';
 import ContextMenu, { Item } from 'ol-contextmenu';
 import Transform from 'ol-ext/interaction/Transform';
+import Collection from 'ol/Collection';
 import Feature from 'ol/Feature';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import GeoJSON from 'ol/format/GeoJSON';
-import Collection from 'ol/Collection';
 import { MultiPoint } from 'ol/geom';
 import { Draw, Modify, Translate } from 'ol/interaction';
 import { createBox, DrawEvent } from 'ol/interaction/Draw';
@@ -25,7 +36,6 @@ import { useGlobalContext, useTranslation } from '../contexts/global.client.cont
 import { Button } from '../ui/button';
 import { FeatureInfoSheet } from './FeatureInfoSheet';
 import { FeaturePromptDialog } from './FeaturePromptDialog';
-import { VSMap } from '@/types/map/vsmap';
 
 export function MapComponent() {
   const t = useTranslation();
@@ -45,6 +55,8 @@ export function MapComponent() {
   } | null>(null);
   const modifyInteractionRef = useRef<any>(null);
   const translateInteractionRef = useRef<any>(null);
+  // const selectedTraderRef = useRef<Feature | null>(null);
+  // const selectedTLRef = useRef<Feature | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   function asyncPrompt<T extends DialogBuilder.FieldBuilderConfig>(fieldConfig: T): Promise<DialogBuilder.Result<T>> {
@@ -136,6 +148,16 @@ export function MapComponent() {
           newFeature.set(key as keyof typeof result.data, value);
         });
         newFeature.set('shapeType', shapeType);
+        const { geometryJson, propertiesJson } = transformAndPrepareFeatureForSave(newFeature, true);
+        const response = await addMapCustomMapFeature(geometryJson, propertiesJson);
+
+        if (!response.is_error) {
+          newFeature.setId(response.value.id);
+
+          Object.entries(response.value.properties).forEach(([key, value]) => {
+            newFeature.set(key as keyof typeof result.data, value);
+          });
+        }
       } else {
         source?.removeFeature(newFeature);
       }
@@ -158,9 +180,10 @@ export function MapComponent() {
     if (translateInteractionRef.current) map.removeInteraction(translateInteractionRef.current);
 
     if (!isEditing && feature) {
+      const isCircle = feature.get('shapeType') === 'circle';
       const isSquare = feature.get('shapeType') === 'square';
 
-      if (isSquare) {
+      if (isSquare || isCircle) {
         // only use ol-ext for squares
         const transform = new Transform({
           features: [feature],
@@ -172,6 +195,14 @@ export function MapComponent() {
         });
         map.addInteraction(transform);
         modifyInteractionRef.current = transform;
+        transform.on(['translateend', 'scaleend', 'rotateend', 'transformend', 'transforming'], async (event: any) => {
+          if ('feature' in event) {
+            const feature: Feature = event.feature;
+
+            const { geometryJson, propertiesJson } = transformAndPrepareFeatureForSave(feature, false);
+            await updateMapCustomFeature(feature.getId() as string, geometryJson, propertiesJson);
+          }
+        });
       } else {
         const collection = new Collection([feature]);
 
@@ -180,6 +211,8 @@ export function MapComponent() {
 
         map.addInteraction(translate);
         map.addInteraction(modify);
+        translate.on('translateend', saveModifyTranslateFeatures);
+        modify.on('modifyend', saveModifyTranslateFeatures);
 
         modifyInteractionRef.current = modify;
         translateInteractionRef.current = translate;
@@ -227,9 +260,17 @@ export function MapComponent() {
       }),
     ];
     const customVectorSource = new Vector({
-      url: 'buildings.geojson',
+      url: '/api/customgeojson',
       format: new GeoJSON(),
     });
+    // getCustomLayerGeoJson().then((r) => {
+    //   if (r.is_error) {
+    //     alert('Error getting custom features');
+    //     return;
+    //   }
+
+    //   customVectorSource.addFeatures(r.value.features);
+    // });
     // TODO: do this for other types too!
     const roadImage = new Image();
     roadImage.src = '/mud_road.png';
@@ -291,12 +332,12 @@ export function MapComponent() {
               return null as any;
             }
 
-            // TODO: no clue what this is??
-            // return new Style({
-            //   zIndex: type == 'Server' ? 1000 : undefined,
-            //   image: image,
-            //   text: text,
-            // });
+            return new Style({
+              // TODO: no clue what this is??
+              // zIndex: type == 'Server' ? 1000 : undefined,
+              image: image,
+              text: text,
+            });
           }
 
           return null;
@@ -389,6 +430,37 @@ export function MapComponent() {
       }
     });
 
+    // TODO: adapted form web cartographer. probably make it easier to read/work later
+    // map.on('pointermove', function (e) {
+    //   if (selectedTLRef.current) {
+    //     selectedTLRef.current.setStyle(undefined);
+    //     selectedTLRef.current = null;
+    //   }
+    //   if (selectedTraderRef.current) {
+    //     selectedTraderRef.current.setStyle(undefined);
+    //     selectedTraderRef.current = null;
+    //   }
+
+    //   map.forEachFeatureAtPixel(e.pixel, function (f, l) {
+    //     if (!l) return;
+
+    //     const layers = layersRef.current;
+    //     const feature = f as Feature;
+
+    //     if (l === layers?.traders) {
+    //       selectedTraderRef.current = feature;
+    //       feature.setStyle(highlightStyleTrader(feature));
+    //       return true;
+    //     }
+
+    //     if (l === layers?.translocators) {
+    //       selectedTLRef.current = feature;
+    //       feature.setStyle(highlightStyleTranslocator);
+    //       return true;
+    //     }
+    //   });
+    // });
+
     const menuItems: Item[] = [
       {
         text: 'Center map here',
@@ -419,6 +491,9 @@ export function MapComponent() {
 
           if (feature) {
             const { geometry, z, ...rest } = feature.getProperties();
+
+            rest.id = feature.getId();
+
             setInspectData(rest);
           }
         },
@@ -458,14 +533,13 @@ export function MapComponent() {
       const currentFeature = map.forEachFeatureAtPixel(evt.pixel, (ft) => ft);
       contextmenu.clear();
       contextmenu.extend(menuItems);
+
       if (!currentFeature) return;
 
       const type = currentFeature.getGeometry()?.getType();
-      const featureProps = currentFeature.getProperties();
-      const isStandardFeatureSet =
-        featureProps.type === 'Base' || 'wares' in featureProps || type === 'MultiLineString' || !!featureProps?.tag;
 
-      if (isStandardFeatureSet) return;
+      if (isStandartFeatureSet(currentFeature, type)) return;
+
       if (currentFeature && currentFeature.getGeometry()?.getType()) {
         console.log('[FEATURE PROPS]', currentFeature.getProperties());
 
@@ -476,7 +550,10 @@ export function MapComponent() {
           },
           {
             text: 'Delete Feature',
-            callback: () => customVectorSource.removeFeature(currentFeature as Feature),
+            callback: async () => {
+              await deleteCustomMapFeature(currentFeature.getId() as string);
+              customVectorSource.removeFeature(currentFeature as Feature);
+            },
           },
         ]);
       }

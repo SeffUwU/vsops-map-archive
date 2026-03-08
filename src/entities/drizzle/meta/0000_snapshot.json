@@ -1,16 +1,114 @@
 {
-  "id": "65c2ec8e-72d1-4ddb-9e36-166474278b02",
+  "id": "d187ef98-4741-46e8-8fa5-3067fc1a209a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "dnd_tracker.users": {
-      "name": "users",
-      "schema": "dnd_tracker",
+    "vs-map-tracker.features": {
+      "name": "features",
+      "schema": "vs-map-tracker",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "creator_id": {
+          "name": "creator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geometry": {
+          "name": "geometry",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "properties": {
+          "name": "properties",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "features_id_pkey": {
+          "name": "features_id_pkey",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "creator_id_fk": {
+          "name": "creator_id_fk",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "features_creator_id_users_id_fk": {
+          "name": "features_creator_id_users_id_fk",
+          "tableFrom": "features",
+          "tableTo": "users",
+          "schemaTo": "vs-map-tracker",
+          "columnsFrom": [
+            "creator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "vs-map-tracker.users": {
+      "name": "users",
+      "schema": "vs-map-tracker",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
           "primaryKey": true,
           "notNull": true
         },
@@ -18,26 +116,49 @@
           "name": "name",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "login": {
           "name": "login",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "passwordHash": {
           "name": "passwordHash",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "locale": {
           "name": "locale",
           "type": "user_locale",
-          "typeSchema": "dnd_tracker",
+          "typeSchema": "vs-map-tracker",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "'en'"
+        },
+        "uiLocale": {
+          "name": "uiLocale",
+          "type": "user_locale",
+          "typeSchema": "vs-map-tracker",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'en'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
         }
       },
       "indexes": {
@@ -59,16 +180,24 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "users_login_unique": {
+          "name": "users_login_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "login"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     }
   },
   "enums": {
-    "dnd_tracker.user_locale": {
+    "vs-map-tracker.user_locale": {
       "name": "user_locale",
-      "schema": "dnd_tracker",
+      "schema": "vs-map-tracker",
       "values": [
         "en",
         "ru"
@@ -76,7 +205,7 @@
     }
   },
   "schemas": {
-    "dnd_tracker": "dnd_tracker"
+    "vs-map-tracker": "vs-map-tracker"
   },
   "sequences": {},
   "roles": {},

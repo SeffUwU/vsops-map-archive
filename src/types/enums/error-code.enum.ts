@@ -8,4 +8,6 @@ export enum ErrorCode {
   CreatorCantJoinHisOwnCampaign = 'creator_cant_join_his_own_campaign',
   CampaignAlreadyJoined = 'campaign_already_joined',
   InternalServerError = 'internal_server_error',
+  FeatureNotFound = 'feature_not_found',
+  InvalidSignUpCode = 'invalid_sign_up_code',
 }

@@ -10,11 +10,10 @@
     "lint": "next lint",
     "drizzle:generate": "npx drizzle-kit generate --name",
     "drizzle:migrate": "npx drizzle-kit migrate",
-    "drizzle:seed": "npx tsx ./src/seed/seed.ts",
     "drizzle:drop": "npx tsx ./src/seed/drop.ts"
   },
   "dependencies": {
-    "@paralleldrive/cuid2": "^2.2.2",
+    "@paralleldrive/cuid2": "^3.3.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-popover": "^1.1.2",

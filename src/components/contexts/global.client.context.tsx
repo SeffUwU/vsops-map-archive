@@ -26,7 +26,7 @@ const globalContextValue = {
     locale: {} as typeof EnglishLocale,
     loading: false,
   },
-  user: {} as TokenPayload,
+  user: null as TokenPayload | null,
   map: {
     toggleState: {} as VSMap.TogglesState,
     bindMapLayerToggle: (name: keyof VSMap.TogglesState) => () => {},
@@ -96,7 +96,7 @@ export function GlobalContextProvider({
           loading,
         },
         map: { toggleState, bindMapLayerToggle, layersRef, mapRef, layersStateRef },
-        user: user ?? ({} as TokenPayload),
+        user: user ?? null,
       }}
     >
       {children}

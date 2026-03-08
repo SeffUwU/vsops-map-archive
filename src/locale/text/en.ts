@@ -16,25 +16,26 @@ export const EnglishLocale = {
   },
   forms: {
     login: {
-      title: 'Enter your email and password to login to your account',
+      title: 'Enter your login and password to login to your account',
       loginButton: 'Login',
       registerQuestion: 'New? Sign up here..',
     },
     signUp: {
-      title: 'Enter your email and password to sign-up your account',
+      title: 'Enter your preffered login and password. Note: you must have an Invite Code to register.',
       signUpButton: 'Sign Up',
       loginQuestion: 'Already have an account? Sign in here..',
     },
   },
   sidebar: {
-    home: 'Home',
+    home: 'Map',
     users: 'Users',
-    characters: 'Characters',
-    campaigns: 'Campaigns',
-    items: 'Items',
     profile: 'Profile',
     theme: 'Theme',
     language: 'Language',
+    // map filter
+    landmarks: 'Landmarks',
+    traders: 'Traders',
+    translocators: 'Translocators',
   },
   pageTitles: {
     joinCampaign: 'Join campaign',
@@ -71,6 +72,7 @@ export const EnglishLocale = {
     login: 'Login',
     you: 'You',
     action: 'Action',
+    inviteCode: 'Invite Code',
   },
   ui: {
     initializingContexts: 'Initializing contexts...',

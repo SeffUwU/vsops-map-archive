@@ -1,13 +1,16 @@
 import { localeEnum, schema } from '@/entities/schema';
 import { relations } from 'drizzle-orm';
-import { index, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-import { usersToCampaigns } from './campaign.entity';
+import { index, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { AllowedLocale } from '@/types/enums/allowed-locale.enum';
+import { feature } from './feature';
+import { createId } from '@paralleldrive/cuid2';
 
 export const users = schema.table(
   'users',
   {
-    id: uuid().defaultRandom().primaryKey(),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
     name: varchar().notNull(),
     login: varchar().notNull().unique(),
     passwordHash: varchar().notNull(),
@@ -22,7 +25,7 @@ export const users = schema.table(
 );
 
 export const usersRelations = relations(users, ({ many }) => ({
-  usersToGroups: many(usersToCampaigns),
+  usersToFeatures: many(feature),
 }));
 
 export type IUser = typeof users.$inferSelect;

@@ -1,1 +1,0 @@
-ALTER TABLE "dnd_tracker"."users" ALTER COLUMN "locale" SET DEFAULT 'en';

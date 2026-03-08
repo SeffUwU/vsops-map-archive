@@ -1,2 +1,0 @@
-ALTER TABLE "dnd_tracker"."campaigns" ADD COLUMN "inviteCode" varchar NOT NULL;--> statement-breakpoint
-ALTER TABLE "dnd_tracker"."users" ADD COLUMN "uiLocale" "dnd_tracker"."user_locale" DEFAULT 'en';
