@@ -73,6 +73,7 @@ export const RussianLocale: typeof EnglishLocale = {
   },
   ui: {
     initializingContexts: 'Инициализируем контексты...',
+    search: '',
   },
   dialog: {
     feature: {

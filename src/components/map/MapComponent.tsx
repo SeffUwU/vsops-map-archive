@@ -33,10 +33,12 @@ import { Vector } from 'ol/source';
 import XYZ from 'ol/source/XYZ';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import { useEffect, useRef, useState } from 'react';
-import { useGlobalContext, useTranslation } from '../contexts/global.client.context';
+import { useContextUser, useGlobalContext, useTranslation } from '../contexts/global.client.context';
 import { Button } from '../ui/button';
 import { FeatureInfoSheet } from './FeatureInfoSheet';
 import { FeaturePromptDialog } from './FeaturePromptDialog';
+
+export const dynamic = 'force-dynamic';
 
 interface MapComponentProps {
   old?: boolean;
@@ -46,7 +48,7 @@ export function MapComponent({ old }: MapComponentProps) {
 
   const t = useTranslation();
   const featureBuilderDialog = useRef(getFeatureDialogConfig(t));
-
+  const user = useContextUser();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const {
     map: { layersRef, mapRef, layersStateRef },
@@ -256,14 +258,7 @@ export function MapComponent({ old }: MapComponentProps) {
       url: '/api/customgeojson',
       format: new GeoJSON(),
     });
-    // getCustomLayerGeoJson().then((r) => {
-    //   if (r.is_error) {
-    //     alert('Error getting custom features');
-    //     return;
-    //   }
 
-    //   customVectorSource.addFeatures(r.value.features);
-    // });
     // TODO: do this for other types too!
     const roadImage = new Image();
     roadImage.src = '/mud_road.png';
@@ -340,7 +335,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Traders",
         minZoom: 3,
         source: new Vector({
-          url: 'traders.geojson',
+          url: '/traders.geojson',
           format: new GeoJSON(),
         }),
         style: function (feature) {
@@ -359,7 +354,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Translocators",
         minZoom: 2,
         source: new Vector({
-          url: 'translocators.geojson',
+          url: '/translocators.geojson',
           format: new GeoJSON(),
         }),
         style: handleCustomTranslocatorStyle(layersStateRef.current),
@@ -367,10 +362,10 @@ export function MapComponent({ old }: MapComponentProps) {
       chunks: new VectorLayer({
         className: 'vsGenChunks',
         // name: "Explored Chunks",
-        source: new Vector({
-          url: 'chunk.geojson',
-          format: new GeoJSON(),
-        }),
+        // source: new Vector({
+        //   url: 'chunk.geojson',
+        //   format: new GeoJSON(),
+        // }),
         opacity: 0.5,
         style: function (feature) {
           return new Style({
@@ -382,7 +377,7 @@ export function MapComponent({ old }: MapComponentProps) {
       custom: new VectorLayer({
         className: 'vsBuildings',
         source: customVectorSource,
-        style: handleCustomFeatureLayerStyle(mapRef.current, layersStateRef.current),
+        style: (feature) => handleCustomFeatureLayerStyle(mapRef.current, layersStateRef.current)(feature),
       }),
     };
     const initialX = searchParams.get('x'),
@@ -485,41 +480,67 @@ export function MapComponent({ old }: MapComponentProps) {
         text: 'Inspect',
         callback: (obj, map) => {
           const pixel = map.getPixelFromCoordinate(obj.coordinate);
+          const clickCoord = obj.coordinate;
 
-          const feature = map.forEachFeatureAtPixel(pixel, (feat) => feat);
+          const features = map.getFeaturesAtPixel(pixel);
 
-          if (feature) {
-            const { geometry, z, ...rest } = feature.getProperties();
+          if (!features || features.length === 0) return;
 
-            rest.id = feature.getId();
+          let closestFeature = features[0];
+          let closestDist = Infinity;
+
+          features.forEach((feature) => {
+            const geom = feature.getGeometry();
+            if (!geom) return;
+
+            const extent = geom.getExtent();
+            const center = [(extent[0] + extent[2]) / 2, (extent[1] + extent[3]) / 2];
+
+            const dx = center[0] - clickCoord[0];
+            const dy = center[1] - clickCoord[1];
+            const dist = dx * dx + dy * dy;
+
+            if (dist < closestDist) {
+              closestDist = dist;
+              closestFeature = feature;
+            }
+          });
+
+          if (closestFeature) {
+            const { geometry, z, ...rest } = closestFeature.getProperties();
+            rest.id = closestFeature.getId();
 
             setInspectData(rest);
           }
         },
       },
-      '-',
-      {
-        text: 'Create',
-        items: [
-          {
-            text: 'Circle',
-            callback: () => startCustomDraw('circle'),
-          },
-          {
-            text: 'Square',
-            callback: () => startCustomDraw('square'),
-          },
-          {
-            text: 'Polygon',
-            callback: () => startCustomDraw('polygon'),
-          },
-          {
-            text: 'Road',
-            callback: () => startCustomDraw('road'),
-          },
-        ],
-      },
-      '-',
+      ...(user
+        ? ([
+            '-',
+            {
+              text: 'Create',
+              items: [
+                {
+                  text: 'Circle',
+                  callback: () => startCustomDraw('circle'),
+                },
+                {
+                  text: 'Square',
+                  callback: () => startCustomDraw('square'),
+                },
+                {
+                  text: 'Polygon',
+                  callback: () => startCustomDraw('polygon'),
+                },
+                {
+                  text: 'Road',
+                  callback: () => startCustomDraw('road'),
+                },
+              ],
+            },
+            '-',
+          ] as Item[])
+        : []),
     ];
 
     const contextmenu = new ContextMenu({
@@ -537,7 +558,7 @@ export function MapComponent({ old }: MapComponentProps) {
 
       const type = currentFeature.getGeometry()?.getType();
 
-      if (isStandartFeatureSet(currentFeature, type)) return;
+      if (isStandartFeatureSet(currentFeature, type) || !user) return;
 
       if (currentFeature && currentFeature.getGeometry()?.getType()) {
         console.log('[FEATURE PROPS]', currentFeature.getProperties());

@@ -11,7 +11,7 @@ import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
  */
 export const handleCustomFeatureLayerStyle =
   (map: Map | null, layersStateRef: VSMap.TogglesState) => (feature: FeatureLike) => {
-    if (!map || layersStateRef.custom) return;
+    if (!map) return;
 
     const geometryType = feature.getGeometry()!.getType();
     const zoom = map.getView().getZoom() || 1;

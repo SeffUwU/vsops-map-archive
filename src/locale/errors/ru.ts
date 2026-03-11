@@ -10,4 +10,7 @@ export const RussianErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.CampaignAlreadyJoined]: 'Вы уже являетесь частью этой кампании.',
   [ErrorCode.CampaignNotFound]: 'Кампания не найдена.',
   [ErrorCode.InternalServerError]: 'Произошла серверная ошибка. Свяжитесь с НАМИ если это будет продолжаться.',
+  [ErrorCode.FeatureNotFound]: 'Метка не найдена',
+  [ErrorCode.InvalidSignUpCode]: 'Неверный код приглашения',
+  [ErrorCode.InvalidInput]: 'Неверные входные данные',
 };

@@ -1,23 +1,18 @@
-import { TokenPayload } from "@/types/jwt/token.payload.type";
-import jwt, { Jwt, JwtPayload } from "jsonwebtoken";
+import { TokenPayload } from '@/types/jwt/token.payload.type';
+import jwt, { Jwt, JwtPayload } from 'jsonwebtoken';
 
 export class JwtHelper {
   private static secret = process.env.JWT_SECRET;
 
   static sign(data: TokenPayload): Promise<string> {
     return new Promise((resolve, reject) => {
-      jwt.sign(
-        data,
-        JwtHelper.secret,
-        { expiresIn: process.env.JWT_EXPIRES_IN },
-        (err, encoded) => {
-          if (err || !encoded) {
-            return reject(err);
-          }
-
-          resolve(encoded);
+      jwt.sign(data, JwtHelper.secret, { expiresIn: process.env.JWT_EXPIRES_IN as any }, (err, encoded) => {
+        if (err || !encoded) {
+          return reject(err);
         }
-      );
+
+        resolve(encoded);
+      });
     });
   }
 

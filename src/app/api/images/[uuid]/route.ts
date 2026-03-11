@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/server/database';
 import { media } from '@/entities/media';
 import { eq } from 'drizzle-orm';
-
-export async function GET(req: NextRequest, { params }: { params: { uuid: string } }) {
+type RouteContext = {
+  params: Promise<{ uuid: string }>;
+};
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const { uuid } = params;
+    const { uuid } = await context.params;
 
     const [item] = await db
       .select({

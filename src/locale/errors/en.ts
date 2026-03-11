@@ -10,4 +10,7 @@ export const EnglishErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.CampaignAlreadyJoined]: "You're already apart of this campaign.",
   [ErrorCode.CampaignNotFound]: 'Campaign not found.',
   [ErrorCode.InternalServerError]: 'There was a server-side error. Contact US if this issue persist.',
+  [ErrorCode.FeatureNotFound]: 'Map feature is not found',
+  [ErrorCode.InvalidSignUpCode]: 'Invalid sign up code',
+  [ErrorCode.InvalidInput]: 'Invalid input',
 };

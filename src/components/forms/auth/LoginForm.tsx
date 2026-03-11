@@ -9,8 +9,8 @@ import { toast } from '@/hooks/use-toast';
 import { login } from '@/server/actions/auth/login';
 import Link from 'next/link';
 import { useState } from 'react';
-import { isRedirectError } from 'next/dist/client/components/redirect';
 import { LoadingSpinner } from '@/components/ui/loader';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export default function LoginForm() {
   const [loginString, setLoginString] = useState('');
