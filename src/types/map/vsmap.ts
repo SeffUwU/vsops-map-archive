@@ -6,6 +6,7 @@ export namespace VSMap {
     traders: boolean;
     chunks: boolean;
     translocators: boolean;
+    custom: boolean;
   }
 
   export interface VectorLayersRef {

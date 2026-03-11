@@ -27,12 +27,13 @@ export const RussianLocale: typeof EnglishLocale = {
   sidebar: {
     home: 'Главная',
     users: 'Пользователи',
-    characters: 'Персонажи',
-    campaigns: 'Кампании',
-    items: 'Предметы',
     profile: 'Профиль',
     theme: 'Тема',
     language: 'Язык',
+    landmarks: 'Базы',
+    traders: 'Торговцы',
+    translocators: 'Транслокаторы',
+    custom: 'Кастом',
   },
   pageTitles: { joinCampaign: 'Вступить в кампанию' },
   pageSpecific: {
@@ -68,8 +69,27 @@ export const RussianLocale: typeof EnglishLocale = {
     login: 'Логин',
     you: 'Вы',
     action: 'Действие',
+    inviteCode: 'Код приглашения',
   },
   ui: {
     initializingContexts: 'Инициализируем контексты...',
+  },
+  dialog: {
+    feature: {
+      descriptionTitle: 'Описание',
+      nameTitle: 'Название',
+      selectTypeTitle: 'Тип',
+      selectValues: {
+        base: 'База',
+        bow: 'Вода',
+        district: 'Улица/Район',
+        farm: 'Ферма/Поля',
+        library: 'Библиотека',
+        poi: 'Точка интереса',
+        smithery: 'Кузня',
+        town_hall: 'Мэрия/Ратушка',
+        trader: 'Торговец',
+      },
+    },
   },
 };

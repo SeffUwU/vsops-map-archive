@@ -28,6 +28,7 @@ const globalContextValue = {
   },
   user: null as TokenPayload | null,
   map: {
+    customLayerJson: {} as any,
     toggleState: {} as VSMap.TogglesState,
     bindMapLayerToggle: (name: keyof VSMap.TogglesState) => () => {},
     layersRef: {} as MutableRefObject<VSMap.VectorLayersRef | null>,
@@ -42,7 +43,8 @@ export function GlobalContextProvider({
   children,
   locale = EnglishLocale,
   user,
-}: React.PropsWithChildren & { locale: typeof EnglishLocale; user?: TokenPayload }) {
+  customLayerJson,
+}: React.PropsWithChildren & { locale: typeof EnglishLocale; user?: TokenPayload; customLayerJson: any }) {
   const [expanded, setExpanded] = useLocalStorageState('_ui.sidebarExpanded', {
     storageSync: true,
     defaultValue: false,
@@ -53,6 +55,7 @@ export function GlobalContextProvider({
     landmarks: true,
     traders: false,
     translocators: false,
+    custom: false,
   });
   const layersStateRef = useRef<VSMap.TogglesState>(toggleState);
   const layersRef = useRef<VSMap.VectorLayersRef | null>(null);
@@ -95,7 +98,7 @@ export function GlobalContextProvider({
           locale,
           loading,
         },
-        map: { toggleState, bindMapLayerToggle, layersRef, mapRef, layersStateRef },
+        map: { toggleState, bindMapLayerToggle, layersRef, mapRef, layersStateRef, customLayerJson },
         user: user ?? null,
       }}
     >

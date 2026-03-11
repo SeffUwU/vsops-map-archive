@@ -5,6 +5,8 @@ import { Type } from 'ol/geom/Geometry';
 import { fromCircle } from 'ol/geom/Polygon';
 import { ModifyEvent } from 'ol/interaction/Modify';
 import { TranslateEvent } from 'ol/interaction/Translate';
+import { fromLonLat } from 'ol/proj';
+
 const format = new GeoJSON();
 
 export function transformAndPrepareFeatureForSave(newFeature: Feature, transformCircle: boolean) {
@@ -49,3 +51,24 @@ export function isStandartFeatureSet(feature: FeatureLike, type?: Type) {
   const featureProps = feature.getProperties();
   return featureProps.type === 'Base' || 'wares' in featureProps || type === 'MultiLineString' || !!featureProps?.tag;
 }
+
+export const getFeatureCenter = (feature: any): [number, number] => {
+  const { type, coordinates } = feature.geometry;
+
+  let center: [number, number] = [0, 0];
+
+  if (type === 'Point') {
+    center = [coordinates[0], coordinates[1]];
+  } else if (type === 'Polygon' || type === 'Feature') {
+    const points = coordinates[0];
+    const lng = points.reduce((sum: number, coord: number[]) => sum + coord[0], 0) / points.length;
+    const lat = points.reduce((sum: number, coord: number[]) => sum + coord[1], 0) / points.length;
+    center = [lng, lat];
+  }
+
+  if (Math.abs(center[0]) <= 180 && Math.abs(center[1]) <= 90) {
+    return fromLonLat(center) as [number, number];
+  }
+
+  return center;
+};

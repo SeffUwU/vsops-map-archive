@@ -9,9 +9,11 @@ export function WrapWithContexts({
   children,
   locale,
   user,
-}: React.PropsWithChildren & { locale: typeof EnglishLocale; user?: TokenPayload }) {
+  customLayerJson,
+  // TODO: types
+}: React.PropsWithChildren & { locale: typeof EnglishLocale; user?: TokenPayload; customLayerJson: any }) {
   return (
-    <GlobalContextProvider locale={locale} user={user}>
+    <GlobalContextProvider locale={locale} user={user} customLayerJson={customLayerJson}>
       {children}
     </GlobalContextProvider>
   );

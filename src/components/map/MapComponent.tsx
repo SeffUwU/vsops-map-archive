@@ -2,6 +2,7 @@
 
 import { mapColorRef, mapIcons, mapMousePosController, vintageStoryWorldGrid } from '@/constants/map.consts';
 import { handleCustomFeatureLayerStyle } from '@/lib/map/custom-feature-styler';
+import { highlightStyleTrader, highlightStyleTranslocator } from '@/lib/map/highlight-styles';
 import {
   isStandartFeatureSet,
   saveModifyTranslateFeatures,
@@ -15,6 +16,7 @@ import {
 } from '@/server/actions/map/map.actions';
 import { getFeatureDialogConfig } from '@/types/map/dialog.configs';
 import { VSMap } from '@/types/map/vsmap';
+import { useSearchParams } from 'next/navigation';
 import ContextMenu, { Item } from 'ol-contextmenu';
 import Transform from 'ol-ext/interaction/Transform';
 import Collection from 'ol/Collection';
@@ -22,7 +24,6 @@ import Feature from 'ol/Feature';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import GeoJSON from 'ol/format/GeoJSON';
-import { MultiPoint } from 'ol/geom';
 import { Draw, Modify, Translate } from 'ol/interaction';
 import { createBox, DrawEvent } from 'ol/interaction/Draw';
 import TileLayer from 'ol/layer/Tile';
@@ -36,8 +37,6 @@ import { useGlobalContext, useTranslation } from '../contexts/global.client.cont
 import { Button } from '../ui/button';
 import { FeatureInfoSheet } from './FeatureInfoSheet';
 import { FeaturePromptDialog } from './FeaturePromptDialog';
-import { useSearchParams } from 'next/navigation';
-import { highlightStyleTrader, highlightStyleTranslocator } from '@/lib/map/highlight-styles';
 
 interface MapComponentProps {
   old?: boolean;
@@ -383,7 +382,7 @@ export function MapComponent({ old }: MapComponentProps) {
       custom: new VectorLayer({
         className: 'vsBuildings',
         source: customVectorSource,
-        style: handleCustomFeatureLayerStyle(mapRef.current),
+        style: handleCustomFeatureLayerStyle(mapRef.current, layersStateRef.current),
       }),
     };
     const initialX = searchParams.get('x'),

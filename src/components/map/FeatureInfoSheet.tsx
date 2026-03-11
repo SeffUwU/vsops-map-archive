@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Sheet,
   SheetClose,
@@ -10,36 +11,116 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { toast } from '@/hooks/use-toast';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Languages, Loader2 } from 'lucide-react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+
+const SUPPORTED_LANGUAGES = [
+  { label: 'Russian', value: 'ru' },
+  { label: 'English', value: 'en' },
+  { label: 'Spanish', value: 'es' },
+  { label: 'French', value: 'fr' },
+  { label: 'German', value: 'de' },
+  { label: 'Chinese', value: 'zh-CN' },
+  { label: 'Japanese', value: 'ja' },
+  { label: 'Korean', value: 'ko' },
+  { label: 'Italian', value: 'it' },
+  { label: 'Portuguese', value: 'pt' },
+];
 
 interface FeatureInfoSheetProps {
   data: Record<string, string> | null;
   setInspectData: Dispatch<SetStateAction<Record<string, string> | null>>;
 }
+
 export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps) {
-  // State to track which token image is currently being viewed in full size
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [translatedDescription, setTranslatedDescription] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [targetLang, setTargetLang] = useState('ru');
+
+  useEffect(() => {
+    setTranslatedDescription(null);
+  }, [data, targetLang]); // Clear if token or language changes
+
+  const handleTranslate = async () => {
+    if (!data?.description) return;
+
+    setIsTranslating(true);
+    try {
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=${targetLang}`;
+
+      const formData = new URLSearchParams();
+      formData.append('q', data.description);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      const result = await response.json();
+
+      const translatedText = result[0].map((segment: any) => segment[0]).join('');
+
+      setTranslatedDescription(translatedText);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error translating!',
+        description: 'There was an error trying to translate the text...',
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   return (
     <>
-      <Sheet
-        open={!!data}
-        onOpenChange={(open) => {
-          if (!open) {
-            setInspectData(null);
-          }
-        }}
-        modal={false}
-      >
+      <Sheet open={!!data} onOpenChange={(open) => !open && setInspectData(null)} modal={false}>
         <SheetContent
           className="flex flex-col justify-between overflow-y-auto sm:max-w-md"
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
         >
-          <SheetHeader>
-            <SheetTitle>{data?.name || data?.label || 'Token Info'}</SheetTitle>
-            <SheetDescription>{data?.description}</SheetDescription>
+          <SheetHeader className="gap-4">
+            <div>
+              <SheetTitle>{data?.name || data?.label || 'Token Info'}</SheetTitle>
+              <SheetDescription className="mt-2 text-sm leading-relaxed">
+                {translatedDescription || data?.description}
+              </SheetDescription>
+            </div>
+
+            {data?.description && (
+              <div className="flex items-center gap-2">
+                <Select value={targetLang} onValueChange={setTargetLang}>
+                  <SelectTrigger className="w-[130px] h-8 text-xs">
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.value} value={lang.value} className="text-xs">
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 px-3 text-xs gap-2"
+                  onClick={handleTranslate}
+                  disabled={isTranslating || !data?.description}
+                >
+                  {isTranslating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
+                  {translatedDescription ? 'Refresh' : 'Translate'}
+                </Button>
+              </div>
+            )}
           </SheetHeader>
 
           <div className="flex-1 flex flex-col gap-6 py-6">
@@ -58,7 +139,7 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
 
                     return (
                       <div key={key} className="flex flex-col gap-3">
-                        <Label className="capitalize">{key}</Label>
+                        <Label className="capitalize">{key} TIP: hold shift to scroll horizontal</Label>
                         <div className="flex gap-3 overflow-x-auto pb-2 snap-x custom-scrollbar">
                           {imageIds.map((id) => (
                             <button

@@ -44,3 +44,5 @@ dev_data
 
 # new one!
 pgdata
+tiles
+**/segment*

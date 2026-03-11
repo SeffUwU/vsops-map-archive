@@ -9,6 +9,8 @@ import { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { redirect } from 'next/navigation';
 import './globals.css';
+import { getCustomLayerGeoJson } from '@/server/actions/map/map.actions';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export const metadata: Metadata = {
   title: 'DnD Tracker',
@@ -30,7 +32,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [auth, path, t] = await Promise.all([checkAuth(), getPathname(), useServerTranslation()]);
+  const [auth, path, t, customLayerJson] = await Promise.all([
+    checkAuth(),
+    getPathname(),
+    useServerTranslation(),
+    getCustomLayerGeoJson(),
+  ]);
 
   // if (
   //   auth.is_error &&
@@ -45,13 +52,28 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-row-reverse h-full mt-12 md:mt-0`}
       >
-        <WrapWithContexts locale={t} user={!auth.is_error ? auth.value.user : undefined}>
-          <main className="w-full overflow-y-auto">
-            {children}
-            <Toaster />
-          </main>
-          <Sidebar />
-        </WrapWithContexts>
+        <TooltipProvider>
+          <WrapWithContexts
+            locale={t}
+            user={!auth.is_error ? auth.value.user : undefined}
+            customLayerJson={customLayerJson.is_error ? {} : customLayerJson.value}
+          >
+            <main className="w-full overflow-y-auto">
+              {children}
+              <div className="absolute top-2 right-2 z-10">
+                <Tooltip>
+                  <TooltipTrigger className="bg-slate-800 px-2 rounded-sm">Info</TooltipTrigger>
+                  <TooltipContent>
+                    <p>This is a very much WORK IN PROGRESS</p>
+                    <p>If you have any questions contact me in-game: `Sefian`</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <Toaster />
+            </main>
+            <Sidebar />
+          </WrapWithContexts>
+        </TooltipProvider>
       </body>
     </html>
   );

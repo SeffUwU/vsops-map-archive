@@ -36,6 +36,7 @@ export const EnglishLocale = {
     landmarks: 'Landmarks',
     traders: 'Traders',
     translocators: 'Translocators',
+    custom: 'Custom',
   },
   pageTitles: {
     joinCampaign: 'Join campaign',
@@ -76,6 +77,7 @@ export const EnglishLocale = {
   },
   ui: {
     initializingContexts: 'Initializing contexts...',
+    search: 'Goto Feature',
   },
   dialog: {
     feature: {

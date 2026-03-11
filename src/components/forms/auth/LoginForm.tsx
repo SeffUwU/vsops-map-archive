@@ -58,11 +58,10 @@ export default function LoginForm() {
       <CardContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">{t.capitalizedWords.email}</Label>
+            <Label htmlFor="login">{t.capitalizedWords.login}</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
+              id="login"
+              type="login"
               required
               value={loginString}
               onChange={(e) => setLoginString(e.target.value)}
