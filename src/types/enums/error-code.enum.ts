@@ -10,4 +10,5 @@ export enum ErrorCode {
   InternalServerError = 'internal_server_error',
   FeatureNotFound = 'feature_not_found',
   InvalidSignUpCode = 'invalid_sign_up_code',
+  InvalidInput = 'invalid_input',
 }

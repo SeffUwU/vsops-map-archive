@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChangeEvent, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { FileUploadField } from '../fields/FileField';
+import { deleteImageAction } from '@/server/actions/uploads/images';
 
 interface PromptProps {
   isOpen: boolean;
@@ -22,13 +24,41 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
       {} as Record<string, string>,
     ),
   );
+  const [sessionUploadedIds, setSessionUploadedIds] = useState<string[]>([]);
 
   const bindValueHandler = (name: string) => (e: ChangeEvent<HTMLInputElement>) => {
     setValue((prev) => ({ ...prev, [name]: e.target.value }));
   };
 
+  const handleCancel = async () => {
+    if (sessionUploadedIds.length > 0) {
+      await Promise.all(sessionUploadedIds.map(deleteImageAction));
+    }
+
+    onClose({ cancelled: true, data: null });
+  };
+
+  const onUploadSuccessHandler = (fieldName: string, newId: string) => {
+    setValue((prev) => {
+      const currentRawValue = prev[fieldName] || '';
+      const updatedValue = currentRawValue ? `${currentRawValue},${newId}` : newId;
+
+      return { ...prev, [fieldName]: updatedValue };
+    });
+
+    setSessionUploadedIds((prev) => [...prev, newId]);
+  };
+
+  const onManualDeleteHandler = (fieldName: string, idToRemove: string) => {
+    setValue((prev) => {
+      const currentIds = prev[fieldName].split(',').filter((id) => id !== idToRemove);
+      return { ...prev, [fieldName]: currentIds.join(',') };
+    });
+    setSessionUploadedIds((prev) => prev.filter((i) => i !== idToRemove));
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose({ cancelled: true, data: null })}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{config.title ?? 'Dialog'}</DialogTitle>
@@ -52,6 +82,7 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
                   </div>
                 );
               }
+
               if (field.type === 'select') {
                 return (
                   <div key={idx}>
@@ -78,12 +109,26 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
                   </div>
                 );
               }
+
+              if (field.type === 'file') {
+                return (
+                  <div key={idx}>
+                    <FileUploadField
+                      label={field.title}
+                      value={value[field.name] || ''}
+                      onUploadSuccess={(id) => onUploadSuccessHandler(field.name, id)}
+                      onManualDelete={(id) => onManualDeleteHandler(field.name, id)}
+                    />
+                  </div>
+                );
+              }
+
               return null;
             })}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onClose({ cancelled: true, data: null })}>
+          <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button onClick={() => onClose({ cancelled: false, data: value })}>Save Feature</Button>

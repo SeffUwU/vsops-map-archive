@@ -1,6 +1,7 @@
+import { mapIcons } from '@/constants/map.consts';
 import { FeatureLike } from 'ol/Feature';
 import Map from 'ol/Map';
-import { Fill, Stroke, Style, Text } from 'ol/style';
+import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 
 /**
  * Handles styling for custom features layer. This mainly is for reduction of ize
@@ -12,6 +13,7 @@ export const handleCustomFeatureLayerStyle = (map: Map | null) => (feature: Feat
 
   const geometryType = feature.getGeometry()!.getType();
   const zoom = map.getView().getZoom() || 1;
+  const properties = feature.getProperties() as { images?: string };
 
   switch (geometryType) {
     case 'LineString':
@@ -64,11 +66,13 @@ export const handleCustomFeatureLayerStyle = (map: Map | null) => (feature: Feat
             width: 2,
           }),
           text: new Text({
-            text: feature.get('name') || '',
+            text: `${properties?.images?.length ? '🖼️' : ''}${feature.get('name') || ''}`,
             font: '12px Arial',
             fill: new Fill({ color: '#000' }),
             stroke: new Stroke({ color: '#fff', width: 2 }),
-            offsetY: -15,
+            backgroundFill: new Fill({ color: 'rgba(0, 0, 0, 0.3)' }),
+            padding: [2, 2, 2, 2],
+            offsetY: -16,
           }),
         });
       }
@@ -82,8 +86,10 @@ export const handleCustomFeatureLayerStyle = (map: Map | null) => (feature: Feat
           width: 2,
         }),
         text: new Text({
-          text: feature.get('name') || '',
+          text: `${properties?.images?.length ? '🖼️' : ''}${feature.get('name') || ''}`,
           font: '12px Arial',
+          backgroundFill: new Fill({ color: 'rgba(0, 0, 0, 0.3)' }),
+          padding: [2, 2, 2, 2],
           fill: new Fill({ color: '#000' }),
           stroke: new Stroke({ color: '#fff', width: 2 }),
           offsetY: -15,

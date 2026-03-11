@@ -10,7 +10,7 @@ export type HomeParams = {
 export default async function Home({ searchParams }: { searchParams: HomeParams }) {
   return (
     <div>
-      <MapComponent />
+      <MapComponent old={true} />
     </div>
   );
 }

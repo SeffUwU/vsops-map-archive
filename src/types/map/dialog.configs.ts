@@ -27,6 +27,7 @@ export const getFeatureDialogConfig = (t: LocaleType) => {
         })),
         type: 'select',
       },
+      { title: '[OPTIONAL] Upload photos (Max 10)', name: 'images', type: 'file', defaultValue: '' },
     ],
   } as const;
 };

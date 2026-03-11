@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const json = await getCustomLayerGeoJson();
-  console.log(123, json);
+
   if (json.is_error) {
     throw 1;
   }

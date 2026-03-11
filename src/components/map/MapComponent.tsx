@@ -36,8 +36,15 @@ import { useGlobalContext, useTranslation } from '../contexts/global.client.cont
 import { Button } from '../ui/button';
 import { FeatureInfoSheet } from './FeatureInfoSheet';
 import { FeaturePromptDialog } from './FeaturePromptDialog';
+import { useSearchParams } from 'next/navigation';
+import { highlightStyleTrader, highlightStyleTranslocator } from '@/lib/map/highlight-styles';
 
-export function MapComponent() {
+interface MapComponentProps {
+  old?: boolean;
+}
+export function MapComponent({ old }: MapComponentProps) {
+  const searchParams = useSearchParams();
+
   const t = useTranslation();
   const featureBuilderDialog = useRef(getFeatureDialogConfig(t));
 
@@ -56,8 +63,9 @@ export function MapComponent() {
   } | null>(null);
   const modifyInteractionRef = useRef<any>(null);
   const translateInteractionRef = useRef<any>(null);
-  // const selectedTraderRef = useRef<Feature | null>(null);
-  // const selectedTLRef = useRef<Feature | null>(null);
+  const selectedTraderRef = useRef<Feature | null>(null);
+  const selectedTLRef = useRef<Feature | null>(null);
+  const lastHoveredFeature = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
 
   function asyncPrompt<T extends DialogBuilder.FieldBuilderConfig>(
@@ -237,32 +245,14 @@ export function MapComponent() {
       source: new XYZ({
         interpolate: false,
         wrapX: false,
+        maxZoom: old ? 8 : undefined,
         tileGrid: vintageStoryWorldGrid,
-        url: 'https://map.tops.vintagestory.at/data/world/{z}/{x}_{y}.png',
+        url: old
+          ? '/api/old/2026/data/world/{z}/{x}_{y}.png'
+          : 'https://map.tops.vintagestory.at/data/world/{z}/{x}_{y}.png',
       }),
     });
 
-    let highlightStyleTranslocator = [
-      new Style({
-        stroke: new Stroke({
-          color: '#ddaaff',
-          width: 3,
-        }),
-      }),
-      new Style({
-        image: new Icon({
-          color: [255, 192, 255],
-          opacity: 1,
-          src: mapIcons['Translocators'],
-        }),
-        geometry: (feature: any) => {
-          if (feature) {
-            let coordinates = feature.getGeometry().getCoordinates();
-            return new MultiPoint(coordinates);
-          }
-        },
-      }),
-    ];
     const customVectorSource = new Vector({
       url: '/api/customgeojson',
       format: new GeoJSON(),
@@ -396,10 +386,13 @@ export function MapComponent() {
         style: handleCustomFeatureLayerStyle(mapRef.current),
       }),
     };
+    const initialX = searchParams.get('x'),
+      initialY = searchParams.get('y'),
+      initialZoom = searchParams.get('zoom');
 
     const view = new View({
-      center: [-2500, 0],
-      zoom: 4,
+      center: [initialX ? parseInt(initialX) : -2500, initialY ? parseInt(initialY) : 0],
+      zoom: initialZoom ? parseInt(initialZoom) : 4,
       resolutions: [256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5, 0.25, 0.125],
       constrainResolution: true,
     });
@@ -434,36 +427,39 @@ export function MapComponent() {
       }
     });
 
-    // TODO: adapted form web cartographer. probably make it easier to read/work later
-    // map.on('pointermove', function (e) {
-    //   if (selectedTLRef.current) {
-    //     selectedTLRef.current.setStyle(undefined);
-    //     selectedTLRef.current = null;
-    //   }
-    //   if (selectedTraderRef.current) {
-    //     selectedTraderRef.current.setStyle(undefined);
-    //     selectedTraderRef.current = null;
-    //   }
+    // TODO: adapted form web cartographer. probably make it easier to read/work later also fix anys
+    map.on('pointermove', function (e) {
+      const hit = map.forEachFeatureAtPixel(e.pixel, (f, l) => ({ feature: f, layer: l }), {
+        layerFilter: (l) => l === layersRef.current?.traders || l === layersRef.current?.translocators,
+      });
 
-    //   map.forEachFeatureAtPixel(e.pixel, function (f, l) {
-    //     if (!l) return;
+      const feature = hit?.feature as Feature | undefined;
+      const layer = hit?.layer;
 
-    //     const layers = layersRef.current;
-    //     const feature = f as Feature;
+      if (feature === lastHoveredFeature.current) return;
 
-    //     if (l === layers?.traders) {
-    //       selectedTraderRef.current = feature;
-    //       feature.setStyle(highlightStyleTrader(feature));
-    //       return true;
-    //     }
+      if (lastHoveredFeature.current) {
+        (lastHoveredFeature.current as any).setStyle(undefined);
+        lastHoveredFeature.current = null;
+        selectedTraderRef.current = null;
+        selectedTLRef.current = null;
+      }
 
-    //     if (l === layers?.translocators) {
-    //       selectedTLRef.current = feature;
-    //       feature.setStyle(highlightStyleTranslocator);
-    //       return true;
-    //     }
-    //   });
-    // });
+      if (feature && layer) {
+        const isTradersOn = layersStateRef.current.traders;
+        const isTLOn = layersStateRef.current.translocators;
+
+        if (layer === layersRef.current?.traders && isTradersOn) {
+          selectedTraderRef.current = feature;
+          feature.setStyle(highlightStyleTrader(feature));
+          lastHoveredFeature.current = feature as any;
+        } else if (layer === layersRef.current?.translocators && isTLOn) {
+          selectedTLRef.current = feature;
+          feature.setStyle(highlightStyleTranslocator);
+          lastHoveredFeature.current = feature as any;
+        }
+      }
+    });
 
     const menuItems: Item[] = [
       {
