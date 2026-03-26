@@ -31,6 +31,7 @@ export const addMapCustomMapFeature = protect(
       })
       .returning();
 
+    // TODO: acutally update used images.. so they won't stick around
     return ServerActionResponse(HttpStatusCode.Created, {
       type: 'Feature',
       id: newFeature.id,
@@ -49,6 +50,7 @@ export const updateMapCustomFeature = protect(
     if (!existing) {
       return ServerActionError(HttpStatusCode.NotFound, ErrorCode.FeatureNotFound, requestUser.uiLocale);
     }
+    // TODO: acutally update used images.. so they won't stick around
 
     const { creatorId, createdAt, ...restProps } = incomingProperties;
 

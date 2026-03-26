@@ -17,7 +17,7 @@ export function FileUploadField({
   value,
   onUploadSuccess,
   onManualDelete,
-  maxFiles = 10,
+  maxFiles = 100,
 }: FileUploadFieldProps) {
   const [isUploading, setIsUploading] = useState(false);
   const uploadedIds = value ? value.split(',').filter(Boolean) : [];
@@ -67,7 +67,7 @@ export function FileUploadField({
         {isUploading && <Loader2 className="w-5 h-5 animate-spin" />}
       </div>
       {uploadedIds.length > 0 && (
-        <div className="grid grid-cols-5 gap-2 mt-2">
+        <div className="grid grid-cols-5 gap-2 mt-2 max-h-[440px] overflow-y-auto pr-1 custom-scrollbar">
           {uploadedIds.map((id) => (
             <div key={id} className="relative group rounded-md border overflow-hidden aspect-square">
               <img src={`/api/images/${id}`} alt="Uploaded asset" className="object-cover w-full h-full" />
