@@ -85,5 +85,5 @@ export const getVisitedFeatures = (): VSMap.VisitedFeature[] => {
 };
 
 export const pushVisitedFeature = (id: string): void => {
-  localStorageUtils.pushToArray<VSMap.VisitedFeature>(LS_VisitedFeaturesKey, { id, visitedAt: new Date() });
+  localStorageUtils.pushToArray<VSMap.VisitedFeature>(LS_VisitedFeaturesKey, { id, visitedAt: new Date() }, 'id');
 };

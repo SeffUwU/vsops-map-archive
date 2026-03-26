@@ -133,8 +133,10 @@ body {
 
 .coords {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
+  bottom: 0px;
+  left: 0px;
+  padding: 10px;
+  @apply bg-slate-800 rounded-tr-sm;
 }
 
 .ol-ctx-menu-container {

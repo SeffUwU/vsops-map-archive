@@ -3,6 +3,7 @@ import { VSMap } from '@/types/map/vsmap';
 import { FeatureLike } from 'ol/Feature';
 import Map from 'ol/Map';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
+import { getVisitedFeatures } from './map.utils';
 
 /**
  * Handles styling for custom features layer. This mainly is for reduction of ize
@@ -15,7 +16,13 @@ export const handleCustomFeatureLayerStyle =
 
     const geometryType = feature.getGeometry()!.getType();
     const zoom = map.getView().getZoom() || 1;
-    const properties = feature.getProperties() as { images?: string };
+    const properties = feature.getProperties() as VSMap.FeatureProperties;
+    const visitedFeature = getVisitedFeatures()?.find((f) => f.id === feature.getId());
+    const updatedSinceLastVisit = visitedFeature
+      ? new Date(visitedFeature.visitedAt) <= new Date(properties.updatedAt)
+      : false;
+
+    const title = `${updatedSinceLastVisit ? '⭐ ' : ''}${feature.get('name') || ''}${properties?.images?.length ? ' 🖼️' : ''}`;
 
     switch (geometryType) {
       case 'LineString':
@@ -26,7 +33,7 @@ export const handleCustomFeatureLayerStyle =
               color: 'rgba(255, 165, 0, 0.3)',
             }),
             stroke: new Stroke({
-              color: '#964B00',
+              color: '#',
               width: 2,
             }),
 
@@ -37,7 +44,7 @@ export const handleCustomFeatureLayerStyle =
             //   context.lineCap = 'round';
             //   context.lineJoin = 'round';
 
-            //   const pattern = context.createPattern(roadImage, 'repeat');
+            //   const patte964B00rn = context.createPattern(roadImage, 'repeat');
             //   context.strokeStyle = pattern!;
 
             //   context.lineWidth = 20 * (zoom / 11);
@@ -68,7 +75,7 @@ export const handleCustomFeatureLayerStyle =
               width: 2,
             }),
             text: new Text({
-              text: `${properties?.images?.length ? '🖼️' : ''}${feature.get('name') || ''}`,
+              text: title,
               font: '12px Arial',
               fill: new Fill({ color: '#000' }),
               stroke: new Stroke({ color: '#fff', width: 2 }),
@@ -88,7 +95,7 @@ export const handleCustomFeatureLayerStyle =
             width: 2,
           }),
           text: new Text({
-            text: `${properties?.images?.length ? '🖼️' : ''}${feature.get('name') || ''}`,
+            text: title,
             font: '12px Arial',
             backgroundFill: new Fill({ color: 'rgba(0, 0, 0, 0.3)' }),
             padding: [2, 2, 2, 2],

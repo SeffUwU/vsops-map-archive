@@ -171,7 +171,6 @@ export function MapComponent({ old }: MapComponentProps) {
         });
         newFeature.set('shapeType', shapeType);
         const { geometryJson, propertiesJson } = transformAndPrepareFeatureForSave(newFeature, true);
-        console.log(geometryJson, propertiesJson);
         const response = await addMapCustomMapFeature(geometryJson, propertiesJson);
 
         if (!response.is_error) {

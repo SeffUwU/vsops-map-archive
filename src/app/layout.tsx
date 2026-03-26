@@ -60,7 +60,14 @@ export default async function RootLayout({
           >
             <main className="w-full overflow-y-auto">
               {children}
-              <div className="absolute top-2 right-2 z-10">
+              <div className="absolute top-2 right-2 z-10 flex flex-row gap-4">
+                <Tooltip>
+                  <TooltipTrigger className="px-2 rounded-sm bg-yellow-500 text-black">Legend</TooltipTrigger>
+                  <TooltipContent>
+                    <p>⭐ - Feature has updated since last time you visited (stored locally)</p>
+                    <p>🖼️ - Feature has Photos or Screenshots. RMB =&gt; Inspect to access detailed information</p>
+                  </TooltipContent>
+                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger className="bg-slate-800 px-2 rounded-sm">Info</TooltipTrigger>
                   <TooltipContent>
