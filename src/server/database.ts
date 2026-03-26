@@ -1,12 +1,6 @@
-import { config } from 'dotenv';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/libsql';
+import { createClient } from '@libsql/client';
 import * as schema from '../entities';
 
-config({ path: '.env' });
-// FOR DEV temp
-process.env.POSTGRES_HOST = 'localhost';
-
-export const db = drizzle(
-  `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`,
-  { schema },
-);
+const client = createClient({ url: 'file:data.db' });
+export const db = drizzle(client, { schema });

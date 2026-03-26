@@ -69,7 +69,7 @@ export default function LoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">{t.capitalizedWords.email}</Label>
+            <Label htmlFor="password">{t.capitalizedWords.password}</Label>
             <Input
               id="password"
               type="password"

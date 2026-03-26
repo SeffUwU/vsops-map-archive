@@ -1,6 +1,6 @@
 import type { LocaleType } from '@/locale/text/en';
 
-export enum FeatureTypeEnum {
+export enum FeatureSubTypeEnum {
   BASE = 'base',
   SMITHERY = 'smithery',
   TRADER = 'trader',
@@ -20,8 +20,8 @@ export const getFeatureDialogConfig = (t: LocaleType) => {
       {
         name: 'type',
         title: t.dialog.feature.descriptionTitle,
-        defaultValue: FeatureTypeEnum.BASE,
-        values: Object.values(FeatureTypeEnum).map((val) => ({
+        defaultValue: FeatureSubTypeEnum.BASE,
+        values: Object.values(FeatureSubTypeEnum).map((val) => ({
           value: val,
           title: t.dialog.feature.selectValues[val],
         })),

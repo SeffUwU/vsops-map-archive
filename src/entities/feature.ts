@@ -1,25 +1,19 @@
-import { schema } from '@/entities/schema';
-import { relations } from 'drizzle-orm';
-import { index, jsonb, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { users } from './user.entity';
+import { sqliteTable, text, integer, blob, real } from 'drizzle-orm/sqlite-core';
+import { relations, sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+import { users } from './user.entity';
+import { VSMap } from '@/types/map/vsmap';
 
-export const feature = schema.table(
-  'features',
-  {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => createId()),
-    creatorId: text('creator_id').references(() => users.id, { onDelete: 'set null' }),
-    geometry: jsonb('geometry').notNull(),
-    properties: jsonb('properties').default({}).notNull(),
-    createdAt: timestamp('created_at').defaultNow(),
-    updatedAt: timestamp('updated_at')
-      .defaultNow()
-      .$onUpdateFn(() => new Date()),
-  },
-  (t) => [index('features_id_pkey').on(t.id), index('creator_id_fk').on(t.id)],
-);
+export const feature = sqliteTable('features', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  creatorId: text('creator_id').references(() => users.id, { onDelete: 'set null' }),
+  geometry: text('geometry', { mode: 'json' }).notNull(),
+  properties: text('properties', { mode: 'json' }).$type<VSMap.FeatureProperties>().notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+});
 
 export const campaignFeaturesRelations = relations(feature, ({ one }) => ({
   creator: one(users, { fields: [feature.creatorId], references: [users.id] }),

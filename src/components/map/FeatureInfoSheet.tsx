@@ -160,6 +160,10 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
                     );
                   }
 
+                  if (typeof value === 'object') {
+                    return null;
+                  }
+
                   // ...rest are plain text
                   return (
                     <div key={key} className="flex flex-col gap-1.5">

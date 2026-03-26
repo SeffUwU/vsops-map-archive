@@ -1,4 +1,5 @@
 import { updateMapCustomFeature } from '@/server/actions/map/map.actions';
+import { VSMap } from '@/types/map/vsmap';
 import Feature, { FeatureLike } from 'ol/Feature';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Type } from 'ol/geom/Geometry';
@@ -6,6 +7,8 @@ import { fromCircle } from 'ol/geom/Polygon';
 import { ModifyEvent } from 'ol/interaction/Modify';
 import { TranslateEvent } from 'ol/interaction/Translate';
 import { fromLonLat } from 'ol/proj';
+import { localStorageUtils } from '../local-storage/local-storage.utils';
+import { LS_VisitedFeaturesKey } from '@/constants/map.consts';
 
 const format = new GeoJSON();
 
@@ -25,7 +28,7 @@ export function transformAndPrepareFeatureForSave(newFeature: Feature, transform
 
   const { geometry, ...propertiesJson } = newFeature.getProperties();
 
-  return { geometryJson, propertiesJson };
+  return { geometryJson, propertiesJson: propertiesJson as VSMap.FeatureProperties };
 }
 
 export async function saveModifyTranslateFeatures(event: ModifyEvent | TranslateEvent) {
@@ -71,4 +74,16 @@ export const getFeatureCenter = (feature: any): [number, number] => {
   }
 
   return center;
+};
+
+export const getVisitedFeatures = (): VSMap.VisitedFeature[] => {
+  type JSONedVisitedFeature = Omit<VSMap.VisitedFeature, 'visitedAt'> & { visitedAt: string };
+
+  return localStorageUtils
+    .getArrayFrom<JSONedVisitedFeature[]>(LS_VisitedFeaturesKey)
+    .map((v) => ({ ...v, visitedAt: new Date(v.visitedAt) }));
+};
+
+export const pushVisitedFeature = (id: string): void => {
+  localStorageUtils.pushToArray<VSMap.VisitedFeature>(LS_VisitedFeaturesKey, { id, visitedAt: new Date() });
 };

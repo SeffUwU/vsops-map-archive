@@ -1,10 +1,17 @@
 'use client';
 
-import { mapColorRef, mapIcons, mapMousePosController, vintageStoryWorldGrid } from '@/constants/map.consts';
+import {
+  mapColorRef,
+  mapIcons,
+  mapMousePosController,
+  vintageStoryWorldGrid,
+  LS_VisitedFeaturesKey,
+} from '@/constants/map.consts';
 import { handleCustomFeatureLayerStyle } from '@/lib/map/custom-feature-styler';
 import { highlightStyleTrader, highlightStyleTranslocator } from '@/lib/map/highlight-styles';
 import {
   isStandartFeatureSet,
+  pushVisitedFeature,
   saveModifyTranslateFeatures,
   transformAndPrepareFeatureForSave,
 } from '@/lib/map/map.utils';
@@ -37,6 +44,8 @@ import { useContextUser, useGlobalContext, useTranslation } from '../contexts/gl
 import { Button } from '../ui/button';
 import { FeatureInfoSheet } from './FeatureInfoSheet';
 import { FeaturePromptDialog } from './FeaturePromptDialog';
+import { localStorageUtils } from '@/lib/local-storage/local-storage.utils';
+import { config } from '@/constants/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +64,7 @@ export function MapComponent({ old }: MapComponentProps) {
   } = useGlobalContext();
   const [inspectData, setInspectData] = useState<Record<string, string> | null>(null);
   const [drawMode, setDrawMode] = useState<string | null>(null);
-  const [selectedShape, setSelectedShape] = useState<VSMap.CustomFeatureType | null>(null);
+  const [selectedShape, setSelectedShape] = useState<VSMap.FeatureShape | null>(null);
   const [promptConfig, setPromptConfig] = useState<{
     isOpen: boolean;
     resolve: (val: any) => void;
@@ -90,7 +99,7 @@ export function MapComponent({ old }: MapComponentProps) {
     setSelectedShape(null);
   };
 
-  const startCustomDraw = (shapeType: VSMap.CustomFeatureType) => {
+  const startCustomDraw = (shapeType: VSMap.FeatureShape) => {
     if (!mapRef.current || !layersRef.current?.custom) return;
     const map = mapRef.current;
 
@@ -162,6 +171,7 @@ export function MapComponent({ old }: MapComponentProps) {
         });
         newFeature.set('shapeType', shapeType);
         const { geometryJson, propertiesJson } = transformAndPrepareFeatureForSave(newFeature, true);
+        console.log(geometryJson, propertiesJson);
         const response = await addMapCustomMapFeature(geometryJson, propertiesJson);
 
         if (!response.is_error) {
@@ -273,7 +283,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Landmarks",
         minZoom: 2, // TODO: fix
         source: new Vector({
-          url: `/landmarks.geojson`,
+          url: old ? `/landmarks.geojson` : `${config.vsmProxyUrl}/data/geojson/landmarks.geojson`,
           format: new GeoJSON(),
         }),
         style: (feature) => {
@@ -326,6 +336,18 @@ export function MapComponent({ old }: MapComponentProps) {
               image: image,
               text: text,
             });
+          } else if (type == 'Server') {
+            return new Style({
+              image: baseIconCache['Base'],
+              text: new Text({
+                font: 'bold ' + String(localStorage.labelSize || 12) + 'px "arial narrow", "sans serif"',
+                text: 'spawn',
+                textAlign: 'left',
+                textBaseline: 'bottom',
+                fill: sharedTextFill,
+                stroke: sharedTextStroke,
+              }),
+            });
           }
 
           return null;
@@ -335,7 +357,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Traders",
         minZoom: 3,
         source: new Vector({
-          url: '/traders.geojson',
+          url: old ? '/traders.geojson' : `${config.vsmProxyUrl}/data/geojson/traders.geojson`,
           format: new GeoJSON(),
         }),
         style: function (feature) {
@@ -354,7 +376,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Translocators",
         minZoom: 2,
         source: new Vector({
-          url: '/translocators.geojson',
+          url: old ? '/translocators.geojson' : `${config.vsmProxyUrl}/data/geojson/translocators.geojson`,
           format: new GeoJSON(),
         }),
         style: handleCustomTranslocatorStyle(layersStateRef.current),
@@ -509,7 +531,7 @@ export function MapComponent({ old }: MapComponentProps) {
           if (closestFeature) {
             const { geometry, z, ...rest } = closestFeature.getProperties();
             rest.id = closestFeature.getId();
-
+            pushVisitedFeature(closestFeature.getId()!.toString());
             setInspectData(rest);
           }
         },
@@ -625,7 +647,7 @@ export function MapComponent({ old }: MapComponentProps) {
     <>
       {drawMode && (
         <div id="mouse-position-out" className="absolute top-4 left-20 bg-white z-30 p-4 rounded-md shadow-sm">
-          <Button onClick={cancelDrawing}>Cancel</Button>
+          <Button onClick={cancelDrawing}>Confirm</Button>
         </div>
       )}
       <FeatureInfoSheet data={inspectData} setInspectData={setInspectData} />

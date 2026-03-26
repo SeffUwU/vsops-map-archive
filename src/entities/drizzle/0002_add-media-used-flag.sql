@@ -1,1 +1,0 @@
-ALTER TABLE "vs-map-tracker"."media" ADD COLUMN "used" boolean DEFAULT false;

@@ -40,8 +40,8 @@ export const mapColorRef = {
   },
 };
 
-const X_OFFSET = 162282;
-const Y_OFFSET = -211885;
+const X_OFFSET = 0;
+const Y_OFFSET = 0;
 
 export const vintageStoryWorldGrid = new TileGrid({
   extent: [-512000, -512000, 512000, 512000],
@@ -57,3 +57,5 @@ export const mapMousePosController = new MousePosition({
   className: 'coords',
   target: 'mouse-position-out',
 });
+
+export const LS_VisitedFeaturesKey = '_visitedFeatures';

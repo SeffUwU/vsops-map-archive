@@ -1,4 +1,4 @@
-import { FeatureTypeEnum } from '@/types/map/dialog.configs';
+import { FeatureSubTypeEnum } from '@/types/map/dialog.configs';
 
 export const EnglishLocale = {
   statusTitle: {
@@ -94,7 +94,7 @@ export const EnglishLocale = {
         smithery: 'Smithery',
         town_hall: 'Town Hall',
         trader: 'Trader',
-      } as Record<FeatureTypeEnum, string>,
+      } as Record<FeatureSubTypeEnum, string>,
     },
   },
 };

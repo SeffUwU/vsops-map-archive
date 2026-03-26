@@ -9,6 +9,7 @@ import { ServerActionError } from '@/helpers/errors/base.error';
 import { ErrorCode } from '@/types/enums/error-code.enum';
 import { protect } from '@/helpers/auth/protect.action';
 import { TokenPayload } from '@/types/jwt/token.payload.type';
+import { debouncedVacuum } from '@/server/maintanence/vacuum';
 
 // export const uploadImageAction = protect(async (user: TokenPayload, formData: FormData) => {
 //   const file = formData.get('file') as File;
@@ -40,6 +41,8 @@ export const deleteImageAction = protect(async (user: TokenPayload, mediaId: str
   if (!deleted.length) {
     return ServerActionError(HttpStatusCode.NotFound, ErrorCode.FeatureNotFound);
   }
+  // clean old data
+  debouncedVacuum();
 
   return ServerActionResponse(HttpStatusCode.Ok, { deletedId: mediaId });
 });

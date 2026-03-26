@@ -10,3 +10,5 @@ export type WithoutGenerated<T extends { id: string }> = Omit<T, 'id' | 'updated
 export type Nullable<T> = T | null;
 
 export type VoidFn = () => void;
+
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

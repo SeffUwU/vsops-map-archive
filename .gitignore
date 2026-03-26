@@ -41,8 +41,11 @@ next-env.d.ts
 
 # dev data
 dev_data
+data.db
 
 # new one!
 pgdata
 tiles
 **/segment*
+
+sqlite-browser
