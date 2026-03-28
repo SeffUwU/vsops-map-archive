@@ -1,6 +1,18 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# What this project is
 
-## Getting Started
+This project is a wrapper for vintage story web cartographer API of [th3dilli_vintagestory/WebCartographer](https://gitlab.com/th3dilli_vintagestory/WebCartographer) mod.
+
+It does not function as the original WebCartographer mod/website and depends on the API this mod and original application provies.
+
+Theoretically you could (and probably should've in my case) forked it and made a wrapper there, but I just didn't lol.
+
+This project adds the ability to have custom stored map Features and Images in the database. This allows for more customizable archiving abilities and structure tracking.
+
+# What this project is NOT
+
+This project IS NOT A MOD, this is a fullstack web application aims to provide improved archiving capabilities of modern map.
+
+## Develop
 
 First, install dependencies:
 
@@ -27,7 +39,6 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Notes:
 
-- We want to achieve maximum of the server side rendering. So try to make most of your components serve side.
 - All server actions must be annotated with 'use server' as their first line. This keeps them protected from client side.
 - Wrap functions in `protect(fn)` if they need user token payload info OR need to be protected by unauthorized users.
-- Ensure you are adding both locales when adding new messages / errors.
+- Ensure you are adding both locales when adding new messages / errors / text

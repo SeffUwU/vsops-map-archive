@@ -8,6 +8,7 @@ import { ServerActionResponse } from '@/helpers/responses/base.response';
 import { HttpStatusCode } from '@/helpers/responses/response.status';
 import { ActionResponse } from '@/helpers/responses/response.type';
 import { db } from '@/server/database';
+import { AllowedLocale } from '@/types/enums/allowed-locale.enum';
 import { ErrorCode } from '@/types/enums/error-code.enum';
 import { TokenPayload } from '@/types/jwt/token.payload.type';
 import { eq } from 'drizzle-orm';
@@ -33,7 +34,15 @@ export async function checkAuth(): ActionResponse<{
 
     // TODO: add cache
     const dbUser = await db.query.users.findFirst({ where: eq(users.id, result.id) });
-    return ServerActionResponse(HttpStatusCode.Ok, { user: { ...result, ...dbUser, passwordHash: undefined } });
+
+    return ServerActionResponse(HttpStatusCode.Ok, {
+      user: {
+        ...result,
+        ...dbUser,
+        passwordHash: undefined,
+        uiLocale: (dbUser?.uiLocale as AllowedLocale.en) ?? AllowedLocale.en,
+      },
+    });
   } catch (err) {
     return ServerActionError(HttpStatusCode.Unauthorized, ErrorCode.TokenExpired);
   }

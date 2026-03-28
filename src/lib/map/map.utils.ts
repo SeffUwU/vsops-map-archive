@@ -52,7 +52,14 @@ export async function saveModifyTranslateFeatures(event: ModifyEvent | Translate
 
 export function isStandartFeatureSet(feature: FeatureLike, type?: Type) {
   const featureProps = feature.getProperties();
-  return featureProps.type === 'Base' || 'wares' in featureProps || type === 'MultiLineString' || !!featureProps?.tag;
+  return (
+    featureProps.type === 'Base' ||
+    featureProps.type === 'Server' ||
+    featureProps.type === 'Spawn' ||
+    'wares' in featureProps ||
+    type === 'MultiLineString' ||
+    !!featureProps?.tag
+  );
 }
 
 export const getFeatureCenter = (feature: any): [number, number] => {

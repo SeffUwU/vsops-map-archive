@@ -10,6 +10,7 @@ import {
   ChevronRight,
   House,
   Languages,
+  LogIn,
   Map,
   Menu,
   Moon,
@@ -83,7 +84,7 @@ export function Sidebar() {
           >
             <Map />
           </SideBarButton>
-          <SideBarButton
+          {/* <SideBarButton
             {...{
               expanded,
               className,
@@ -93,7 +94,7 @@ export function Sidebar() {
             }}
           >
             <Users />
-          </SideBarButton>
+          </SideBarButton> */}
 
           <Separator orientation="horizontal" className="h-2" />
           <SideBarButton
@@ -199,12 +200,25 @@ export function Sidebar() {
           >
             <Languages />
           </SideBarButton>
+          {!user && (
+            <SideBarButton
+              {...{
+                expanded,
+                className,
+                title: t.capitalizedWords.login,
+                href: '/auth/sign-in',
+                isActive: pathname.includes('/auth/sign-in'),
+              }}
+            >
+              <LogIn />
+            </SideBarButton>
+          )}
           {user && (
             <SideBarButton
               {...{
                 expanded,
                 className,
-                title: t.sidebar.profile,
+                title: user.login,
                 href: '/profile',
                 isActive: pathname.includes('profile'),
               }}

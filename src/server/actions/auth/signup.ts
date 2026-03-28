@@ -24,8 +24,7 @@ export async function signup({
   password: string;
   inviteCode: string;
 }): ActionResponse<Omit<IUser, 'passwordHash'>> {
-  // TODO: temp
-  if (inviteCode !== 'TEST') {
+  if (inviteCode !== process.env.APP_INVITE_CODE) {
     return ServerActionError(HttpStatusCode.Forbidden, ErrorCode.InvalidSignUpCode, AllowedLocale.en);
   }
 
@@ -47,7 +46,10 @@ export async function signup({
     })
     .returning();
   const userCookies = await cookies();
-  const token = await JwtHelper.sign(savedUser);
+  const token = await JwtHelper.sign({
+    ...savedUser,
+    uiLocale: (savedUser.uiLocale as AllowedLocale) ?? AllowedLocale.en,
+  });
 
   userCookies.set(CookieConstants.JwtKey, token, CookieConstants.JwtOptions());
 

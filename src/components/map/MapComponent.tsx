@@ -530,7 +530,11 @@ export function MapComponent({ old }: MapComponentProps) {
           if (closestFeature) {
             const { geometry, z, ...rest } = closestFeature.getProperties();
             rest.id = closestFeature.getId();
-            pushVisitedFeature(closestFeature.getId()!.toString());
+
+            if (!isStandartFeatureSet(closestFeature)) {
+              pushVisitedFeature(closestFeature.getId()!.toString());
+            }
+
             setInspectData(rest);
           }
         },

@@ -168,9 +168,24 @@ body {
   bottom: 0px;
   left: 0px;
   padding: 10px;
-  @apply bg-slate-800 rounded-tr-sm;
+  @apply dark:bg-slate-800 bg-white rounded-tr-sm;
 }
 
 .ol-ctx-menu-container {
-  @apply !bg-orange-100;
+  @apply dark:!bg-slate-800 dark:!text-white;
+}
+
+.ol-ctx-menu-separator hr {
+  @apply !border-white;
+}
+
+.ol-ctx-menu-submenu::after {
+  @apply !border-white;
+}
+.ol-ctx-menu-separator {
+  @apply h-[3px];
+}
+.ol-ctx-menu-separator hr {
+  background-image: none !important;
+  @apply dark:!bg-white dark:!border-none h-[3px] bg-black;
 }

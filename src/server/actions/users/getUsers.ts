@@ -25,6 +25,7 @@ export const getUsers = protect(
       )
     ).map((v) => omitFields(v, ['passwordHash']));
 
-    return ServerActionResponse(HttpStatusCode.Ok, foundUsers);
+    // TODO: dontcare
+    return ServerActionResponse(HttpStatusCode.Ok, foundUsers as any);
   },
 );

@@ -37,7 +37,10 @@ export const login = async ({
 
   const { passwordHash, ...savedUser } = foundUser;
   const userCookies = await cookies();
-  const token = await JwtHelper.sign(savedUser);
+  const token = await JwtHelper.sign({
+    ...savedUser,
+    uiLocale: (savedUser.uiLocale as AllowedLocale) ?? AllowedLocale.en,
+  });
 
   userCookies.set(CookieConstants.JwtKey, token, CookieConstants.JwtOptions());
 
