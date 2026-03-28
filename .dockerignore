@@ -1,2 +1,13 @@
 dev_data
 pgdata
+node_modules
+.next
+out
+build
+.git
+.env
+*.log
+docker-compose.yml
+Dockerfile
+*.db
+*.db-journal

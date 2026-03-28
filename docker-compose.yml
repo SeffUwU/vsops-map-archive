@@ -1,49 +1,21 @@
-version: '3.5'
+version: '3.8'
 
 services:
-  db:
-    image: postgres:16
-    restart: unless-stopped
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dnd-tracker-client
+    restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DATABASE}
-    container_name: tracker-postgres
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/data.db
+    env_file:
+      - .env
+    ports:
+      - '4001:3000'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
-    env_file:
-      - .env
+      - sqlite_data:/app/data
 
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: unless-stopped
-    container_name: nest-pgadmin4
-    env_file:
-      - .env
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
-    ports:
-      - '5050:80'
-    depends_on:
-      - db
-  # app:
-  #   build: .
-  #   restart: unless-stopped
-  #   container_name: dnd-tracker-client
-  #   command: yarn dev
-  #   volumes:
-  #     - ./src:/app/src
-  #     - ./public:/app/public
-  #     - ./.env/:/app/.env
-  #     - ./next.config.ts:/app/next.config.ts
-  #   env_file:
-  #     - .env
-  #   ports:
-  #     - '4000:3000'
-  #   depends_on:
-  #     - db
 volumes:
-  postgres_data:
+  sqlite_data:
