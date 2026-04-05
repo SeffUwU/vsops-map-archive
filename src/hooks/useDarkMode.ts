@@ -4,7 +4,7 @@ import useLocalStorageState from 'use-local-storage-state';
 // TODO make pretty + fix
 export default function useDarkMode() {
   const [isDarkModeEnabled, setIsDarkModeEnabled] = useLocalStorageState('_ui.darkMode', {
-    defaultValue: false,
+    defaultValue: true,
     storageSync: true,
   });
 

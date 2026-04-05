@@ -73,7 +73,7 @@ export function Sidebar() {
         <div className="flex flex-col px-2 gap-2 w-full pt-2">
           <Link href={'/'} className="w-full flex items-center justify-center">
             <Image src={'/vslogo.png'} alt="Main Page" width={48} height={48} />
-            TOPS Archive
+            {expanded ? 'TOPS Archive' : ''}
           </Link>
 
           <Separator orientation="horizontal" />
@@ -173,7 +173,7 @@ export function Sidebar() {
           >
             <Search />
           </SideBarButton>
-          <SideBarButton
+          {/* <SideBarButton
             {...{
               expanded,
               className,
@@ -185,7 +185,7 @@ export function Sidebar() {
             }}
           >
             {isDarkModeEnabled ? <Sun /> : <Moon />}
-          </SideBarButton>
+          </SideBarButton> */}
           <SideBarButton
             {...{
               expanded,
