@@ -1,6 +1,13 @@
 import type VectorLayer from 'ol/layer/Vector';
 import { FeatureSubTypeEnum } from './dialog.configs';
 
+export interface MediaItem {
+  id: string;
+  mimeType: string;
+  used: boolean;
+  createdAt: Date;
+}
+
 export namespace VSMap {
   export interface TogglesState {
     landmarks: boolean;
@@ -24,7 +31,7 @@ export namespace VSMap {
     name: string;
     description: string;
     type: FeatureSubTypeEnum;
-    images: string; // Comma separated images. TODO: I know.
+    images: string | MediaItem[]; // String during creation (comma-separated), array when fetched from API
     shapeType: FeatureShape;
     creatorId: string;
     createdAt: Date; // example: '2026-03-19T14:22:34.008Z'

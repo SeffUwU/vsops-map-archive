@@ -1,24 +1,21 @@
 import { mapColorRef, mapIcons } from '@/constants/map.consts';
 import { VSMap } from '@/types/map/vsmap';
-import { icons } from 'lucide-react';
 import { FeatureLike } from 'ol/Feature';
 import { MultiPoint } from 'ol/geom';
 import { Icon, Stroke, Style } from 'ol/style';
+import React from 'react';
 
-export const handleCustomTranslocatorStyle = (layersStateRef: VSMap.TogglesState) => (feature: FeatureLike) => {
+export const handleCustomTranslocatorStyle = (layersStateRef: React.MutableRefObject<VSMap.TogglesState>) => (feature: FeatureLike) => {
   let opacity = 1;
-  let isOn = layersStateRef.translocators;
+  let isOn = layersStateRef.current.translocators;
   let tlCol = mapColorRef['Translocators']['Translocator'];
 
   if (feature.get('tag') == 'SPAWN') {
     tlCol = mapColorRef['Translocators']['Spawn Translocator'];
-    // isOn = (showSubLayerItems["Translocators"] as any)["Spawn Translocator"];
   } else if (feature.get('tag') == 'TP') {
     tlCol = mapColorRef['Translocators']['Teleporter'];
-    // isOn = (showSubLayerItems["Translocators"] as any)["Teleporter"];
   } else if (feature.get('label') != undefined && feature.get('label').length > 0) {
     tlCol = mapColorRef['Translocators']['Named Translocator'];
-    // isOn = (showSubLayerItems["Translocators"] as any)["Named Translocator"];
   }
   if (!isOn) {
     opacity = 0;

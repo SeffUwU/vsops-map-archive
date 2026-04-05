@@ -69,7 +69,7 @@ export function MapComponent({ old }: MapComponentProps) {
     isOpen: boolean;
     resolve: (val: any) => void;
     config: DialogBuilder.FieldBuilderConfig;
-    currentValues?: Record<string, string>; // TODO: fix types
+    currentValues?: Record<string, any>;
   } | null>(null);
   const modifyInteractionRef = useRef<any>(null);
   const translateInteractionRef = useRef<any>(null);
@@ -167,17 +167,22 @@ export function MapComponent({ old }: MapComponentProps) {
 
       if (!result.cancelled) {
         Object.entries(result.data).forEach(([key, value]) => {
-          newFeature.set(key as keyof typeof result.data, value);
+          newFeature.set(key, value);
         });
         newFeature.set('shapeType', shapeType);
         const { geometryJson, propertiesJson } = transformAndPrepareFeatureForSave(newFeature, true);
-        const response = await addMapCustomMapFeature(geometryJson, propertiesJson);
+
+        // Extract media IDs from the MediaItem array
+        const imagesData = result.data.images as any[] | undefined;
+        const mediaIds = Array.isArray(imagesData) ? imagesData.map((item) => item.id).filter(Boolean) : undefined;
+
+        const response = await addMapCustomMapFeature(geometryJson, propertiesJson, mediaIds);
 
         if (!response.is_error) {
           newFeature.setId(response.value.id);
 
           Object.entries(response.value.properties).forEach(([key, value]) => {
-            newFeature.set(key as keyof typeof result.data, value);
+            newFeature.set(key, value);
           });
         }
       } else {
@@ -282,7 +287,8 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Landmarks",
         minZoom: 2, // TODO: fix
         source: new Vector({
-          url: old ? `/landmarks.geojson` : `${config.vsmProxyUrl}/data/geojson/landmarks.geojson`,
+          // Weirdly.. this is PROXIED!! And works, but the rest do not...
+          url: old ? `/old/landmarks.geojson` : `${config.vsmProxyUrl}/data/geojson/landmarks.geojson`,
           format: new GeoJSON(),
         }),
         style: (feature) => {
@@ -356,7 +362,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Traders",
         minZoom: 3,
         source: new Vector({
-          url: old ? '/traders.geojson' : `${config.vsmProxyUrl}/data/geojson/traders.geojson`,
+          url: old ? '/old/traders.geojson' : `/traders.geojson`,
           format: new GeoJSON(),
         }),
         style: function (feature) {
@@ -375,10 +381,10 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Translocators",
         minZoom: 2,
         source: new Vector({
-          url: old ? '/translocators.geojson' : `${config.vsmProxyUrl}/data/geojson/translocators.geojson`,
+          url: old ? '/old/translocators.geojson' : `/translocators.geojson`,
           format: new GeoJSON(),
         }),
-        style: handleCustomTranslocatorStyle(layersStateRef.current),
+        style: handleCustomTranslocatorStyle(layersStateRef),
       }),
       chunks: new VectorLayer({
         className: 'vsGenChunks',
@@ -600,22 +606,29 @@ export function MapComponent({ old }: MapComponentProps) {
 
               if (!result.cancelled) {
                 Object.entries(result.data).forEach(([key, value]) => {
-                  currentFeature.set(key as keyof typeof result.data, value);
+                  currentFeature.set(key, value);
                 });
-                console.log(result.data);
 
                 const { geometryJson, propertiesJson } = transformAndPrepareFeatureForSave(currentFeature, false);
+
+                // Extract media IDs from the MediaItem array
+                const imagesData = result.data.images as any[] | undefined;
+                const mediaIds = Array.isArray(imagesData)
+                  ? imagesData.map((item) => item.id).filter(Boolean)
+                  : undefined;
+
                 const response = await updateMapCustomFeature(
                   currentFeature.getId() as string,
                   geometryJson,
                   propertiesJson,
+                  mediaIds,
                 );
 
                 if (!response.is_error) {
                   currentFeature.setId(response.value.id);
 
                   Object.entries(response.value.properties).forEach(([key, value]) => {
-                    currentFeature.set(key as keyof typeof result.data, value);
+                    currentFeature.set(key, value);
                   });
                 }
               }

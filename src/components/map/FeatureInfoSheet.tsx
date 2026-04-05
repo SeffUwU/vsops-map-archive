@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/sheet';
 import { toast } from '@/hooks/use-toast';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
-import { Languages, Loader2 } from 'lucide-react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Calendar, Languages, Loader2 } from 'lucide-react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 
 const SUPPORTED_LANGUAGES = [
   { label: 'Russian', value: 'ru' },
@@ -39,10 +39,59 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
   const [translatedDescription, setTranslatedDescription] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLang, setTargetLang] = useState('ru');
+  const [selectedDate, setSelectedDate] = useState<string>('all');
 
   useEffect(() => {
     setTranslatedDescription(null);
   }, [data, targetLang]); // Clear if token or language changes
+
+  const imagesByDate = useMemo(() => {
+    if (!data?.images || !Array.isArray(data.images)) return {};
+
+    const grouped: Record<string, Array<{ id: string; mimeType?: string }>> = {};
+
+    data.images.forEach((mediaObj: any) => {
+      const date = mediaObj.createdAt ? new Date(mediaObj.createdAt).toISOString().split('T')[0] : 'Unknown';
+
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+
+      grouped[date].push({
+        id: mediaObj.id,
+        mimeType: mediaObj.mimeType,
+      });
+    });
+
+    const sorted = Object.entries(grouped)
+      .sort(([a], [b]) => {
+        if (a === 'Unknown') return 1;
+        if (b === 'Unknown') return -1;
+        return b.localeCompare(a);
+      })
+      .reduce(
+        (acc, [date, items]) => {
+          acc[date] = items;
+          return acc;
+        },
+        {} as typeof grouped,
+      );
+
+    return sorted;
+  }, [data?.images]);
+
+  // Get unique dates for dropdown
+  const availableDates = useMemo(() => {
+    return Object.keys(imagesByDate);
+  }, [imagesByDate]);
+
+  // Filter images by selected date
+  const filteredImages = useMemo(() => {
+    if (selectedDate === 'all') {
+      return Object.values(imagesByDate).flat();
+    }
+    return imagesByDate[selectedDate] || [];
+  }, [imagesByDate, selectedDate]);
 
   const handleTranslate = async () => {
     if (!data?.description) return;
@@ -129,33 +178,58 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
                 .filter(([k]) => !['name', 'description', 'label'].includes(k))
                 .map(([key, value]) => {
                   if (key === 'images') {
-                    const imageIds = Array.isArray(value)
-                      ? value
-                      : typeof value === 'string'
-                        ? value.split(',').filter(Boolean)
-                        : [];
+                    if (!Array.isArray(value) || value.length === 0) return null;
 
-                    if (imageIds.length === 0) return null;
+                    const imageItems = value.map((mediaObj: any) => ({
+                      id: mediaObj.id,
+                      mimeType: mediaObj.mimeType,
+                      createdAt: mediaObj.createdAt,
+                    }));
 
                     return (
                       <div key={key} className="flex flex-col gap-3">
-                        <Label className="capitalize">{key} TIP: hold shift to scroll horizontal</Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="capitalize">{key}</Label>
+                          {availableDates.length > 1 && (
+                            <Select value={selectedDate} onValueChange={setSelectedDate}>
+                              <SelectTrigger className="w-[150px] h-8 text-xs">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                <SelectValue placeholder="Filter by date" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All dates</SelectItem>
+                                {availableDates.map((date) => (
+                                  <SelectItem key={date} value={date} className="text-xs">
+                                    {date === 'Unknown' ? 'Unknown date' : date}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">TIP: hold shift to scroll horizontal</p>
                         <div className="flex gap-3 overflow-x-auto pb-2 snap-x custom-scrollbar">
-                          {imageIds.map((id) => (
+                          {filteredImages.map((mediaObj) => (
                             <button
-                              key={id}
+                              key={mediaObj.id}
                               type="button"
-                              onClick={() => setZoomedImage(id)}
+                              onClick={() => setZoomedImage(mediaObj.id)}
                               className="relative flex-shrink-0 w-24 h-24 rounded-md border overflow-hidden snap-start hover:opacity-80 transition-opacity ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <img
-                                src={`/api/images/${id}`}
+                                src={`/api/images/${mediaObj.id}`}
                                 alt="Token asset thumbnail"
                                 className="object-cover w-full h-full"
                               />
                             </button>
                           ))}
                         </div>
+                        {selectedDate !== 'all' && filteredImages.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Showing {filteredImages.length} image{filteredImages.length !== 1 ? 's' : ''} from{' '}
+                            {selectedDate === 'Unknown' ? 'unknown date' : selectedDate}
+                          </p>
+                        )}
                       </div>
                     );
                   }

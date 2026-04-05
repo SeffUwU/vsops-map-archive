@@ -2,16 +2,55 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { FileUploadField } from '../fields/FileField';
 import { deleteImageAction } from '@/server/actions/uploads/images';
+import { MediaItem } from '@/types/map/vsmap';
+
+// helper function to extract MediaItem objects from differemt formats
+function extractMediaItems(value: any): MediaItem[] {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      if (typeof item === 'object' && item !== null && 'id' in item) {
+        return item as MediaItem;
+      }
+      return {
+        id: typeof item === 'string' ? item : String(item),
+        mimeType: '',
+        used: false,
+        createdAt: new Date(),
+      } as MediaItem;
+    });
+  }
+
+  if (typeof value === 'string') {
+    // Old format: comma-separated IDs - convert to MediaItem array
+    return value
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .map(
+        (id) =>
+          ({
+            id,
+            mimeType: '',
+            used: false,
+            createdAt: new Date(),
+          }) as MediaItem,
+      );
+  }
+
+  return [];
+}
 
 interface PromptProps {
   isOpen: boolean;
   onClose: (name: DialogBuilder.Result<any>) => void;
   config: DialogBuilder.FieldBuilderConfig;
-  currentValues?: Record<string, string>;
+  currentValues?: Record<string, any>;
 }
 
 export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: PromptProps) {
@@ -21,40 +60,62 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
         acc[field.name] = currentValues ? currentValues[field.name] : field.defaultValue;
         return acc;
       },
-      {} as Record<string, string>,
+      {} as Record<string, any>,
     ),
   );
-  const [sessionUploadedIds, setSessionUploadedIds] = useState<string[]>([]);
+  const [sessionUploadedIds, setSessionUploadedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (currentValues?.images) {
+      const existingItems = extractMediaItems(currentValues.images);
+      setSessionUploadedIds(new Set(existingItems.map((item) => item.id)));
+    }
+  }, [currentValues]);
 
   const bindValueHandler = (name: string) => (e: ChangeEvent<HTMLInputElement>) => {
     setValue((prev) => ({ ...prev, [name]: e.target.value }));
   };
 
   const handleCancel = async () => {
-    if (sessionUploadedIds.length > 0) {
-      await Promise.all(sessionUploadedIds.map(deleteImageAction));
+    const currentImages = extractMediaItems(value.images);
+    const existingIds = currentValues?.images ? extractMediaItems(currentValues.images).map((item) => item.id) : [];
+    const idsToDelete = Array.from(sessionUploadedIds).filter(
+      (id) => !existingIds.includes(id) || !currentImages.find((item) => item.id === id),
+    );
+
+    if (idsToDelete.length > 0) {
+      await Promise.all(idsToDelete.map(deleteImageAction));
     }
 
     onClose({ cancelled: true, data: null });
   };
 
-  const onUploadSuccessHandler = (fieldName: string, newId: string) => {
+  const onUploadSuccessHandler = (fieldName: string, mediaItem: MediaItem) => {
     setValue((prev) => {
-      const currentRawValue = prev[fieldName] || '';
-      const updatedValue = currentRawValue ? `${currentRawValue},${newId}` : newId;
+      const currentValue = prev[fieldName];
+      const existingItems = extractMediaItems(currentValue);
 
-      return { ...prev, [fieldName]: updatedValue };
+      if (!existingItems.find((item) => item.id === mediaItem.id)) {
+        const updatedItems = [...existingItems, mediaItem];
+        return { ...prev, [fieldName]: updatedItems };
+      }
+
+      return prev;
     });
 
-    setSessionUploadedIds((prev) => [...prev, newId]);
+    setSessionUploadedIds((prev) => new Set(prev).add(mediaItem.id));
   };
 
   const onManualDeleteHandler = (fieldName: string, idToRemove: string) => {
     setValue((prev) => {
-      const currentIds = prev[fieldName].split(',').filter((id) => id !== idToRemove);
-      return { ...prev, [fieldName]: currentIds.join(',') };
+      const currentItems = extractMediaItems(prev[fieldName]).filter((item) => item.id !== idToRemove);
+      return { ...prev, [fieldName]: currentItems };
     });
-    setSessionUploadedIds((prev) => prev.filter((i) => i !== idToRemove));
+    setSessionUploadedIds((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(idToRemove);
+      return newSet;
+    });
   };
 
   return (
@@ -115,8 +176,8 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
                   <div key={idx}>
                     <FileUploadField
                       label={field.title}
-                      value={value[field.name] || ''}
-                      onUploadSuccess={(id) => onUploadSuccessHandler(field.name, id)}
+                      value={value[field.name] || []}
+                      onUploadSuccess={(mediaItem) => onUploadSuccessHandler(field.name, mediaItem)}
                       onManualDelete={(id) => onManualDeleteHandler(field.name, id)}
                     />
                   </div>

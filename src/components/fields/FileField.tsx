@@ -1,13 +1,14 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { deleteImageAction } from '@/server/actions/uploads/images';
+import { MediaItem } from '@/types/map/vsmap';
 import { Loader2, X } from 'lucide-react';
 import { ChangeEvent, useState } from 'react';
 
 interface FileUploadFieldProps {
   label: string;
-  value: string;
-  onUploadSuccess: (id: string) => void;
+  value: MediaItem[];
+  onUploadSuccess: (mediaItem: MediaItem) => void;
   onManualDelete: (id: string) => void;
   maxFiles?: number;
 }
@@ -20,11 +21,11 @@ export function FileUploadField({
   maxFiles = 100,
 }: FileUploadFieldProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const uploadedIds = value ? value.split(',').filter(Boolean) : [];
+  const uploadedItems = Array.isArray(value) ? value : [];
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length || uploadedIds.length + files.length > maxFiles) return;
+    if (!files.length || uploadedItems.length + files.length > maxFiles) return;
 
     setIsUploading(true);
 
@@ -37,7 +38,13 @@ export function FileUploadField({
         const data = await response.json();
 
         if (data.id) {
-          onUploadSuccess(data.id);
+          const mediaItem: MediaItem = {
+            id: data.id,
+            mimeType: data.mimeType,
+            used: false,
+            createdAt: new Date(),
+          };
+          onUploadSuccess(mediaItem);
         }
       }
     } finally {
@@ -60,20 +67,20 @@ export function FileUploadField({
           type="file"
           accept="image/*"
           multiple
-          disabled={isUploading || uploadedIds.length >= maxFiles}
+          disabled={isUploading || uploadedItems.length >= maxFiles}
           onChange={handleFileChange}
           className="cursor-pointer"
         />
         {isUploading && <Loader2 className="w-5 h-5 animate-spin" />}
       </div>
-      {uploadedIds.length > 0 && (
+      {uploadedItems.length > 0 && (
         <div className="grid grid-cols-5 gap-2 mt-2 max-h-[440px] overflow-y-auto pr-1 custom-scrollbar">
-          {uploadedIds.map((id) => (
-            <div key={id} className="relative group rounded-md border overflow-hidden aspect-square">
-              <img src={`/api/images/${id}`} alt="Uploaded asset" className="object-cover w-full h-full" />
+          {uploadedItems.map((mediaItem) => (
+            <div key={mediaItem.id} className="relative group rounded-md border overflow-hidden aspect-square">
+              <img src={`/api/images/${mediaItem.id}`} alt="Uploaded asset" className="object-cover w-full h-full" />
               <button
                 type="button"
-                onClick={() => removeImage(id)}
+                onClick={() => removeImage(mediaItem.id)}
                 className="absolute top-1 right-1 bg-black/50 p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <X className="w-3 h-3" />

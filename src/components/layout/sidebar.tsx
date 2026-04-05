@@ -48,8 +48,9 @@ export function Sidebar() {
   const pathname = usePathname();
   const [localLang, setLocalLang] = useLocalStorageState<'en' | 'ru'>('en');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { data: traders, isLoading: tradersLoading } = useFetchJson('/traders.geojson');
-  const { data: landmarks, isLoading: landmarksLoading } = useFetchJson('/landmarks.geojson');
+  const { data: traders, isLoading: tradersLoading } = useFetchJson('/data/geojson/traders.geojson');
+  const { data: landmarks, isLoading: landmarksLoading } = useFetchJson('/data/geojson/landmarks.geojson');
+
   if (loading || landmarksLoading || tradersLoading) {
     return loading;
   }

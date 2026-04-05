@@ -13,7 +13,7 @@ import { getCustomLayerGeoJson } from '@/server/actions/map/map.actions';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export const metadata: Metadata = {
-  title: 'DnD Tracker',
+  title: 'TOPS Archive',
 };
 
 const geistSans = localFont({

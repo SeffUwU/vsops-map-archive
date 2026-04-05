@@ -64,14 +64,17 @@ export function GlobalContextProvider({
   const [loading, setLoading] = useState(true);
 
   const bindMapLayerToggle = (name: keyof VSMap.TogglesState) => (): void => {
-    setTogglesState((prev) => {
-      const newVal = !prev[name];
+    const newVal = !layersStateRef.current[name];
 
-      return { ...prev, [name]: newVal };
-    });
+    layersStateRef.current = { ...layersStateRef.current, [name]: newVal };
 
-    layersStateRef.current[name] = !layersStateRef.current[name];
-    layersRef.current && layersRef.current[name]?.changed();
+    const layer = layersRef.current?.[name];
+    if (layer) {
+      layer.changed();
+      layer.setStyle(layer.getStyle());
+    }
+
+    setTogglesState((prev) => ({ ...prev, [name]: newVal }));
   };
 
   useEffect(() => {

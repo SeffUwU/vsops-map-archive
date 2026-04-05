@@ -8,6 +8,20 @@
       "when": 1773929682389,
       "tag": "0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1775370215253,
+      "tag": "0001_add-feature-media-relations",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775376154359,
+      "tag": "0002_fix-media-fk-cascade",
+      "breakpoints": true
     }
   ]
 }

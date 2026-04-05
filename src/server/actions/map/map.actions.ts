@@ -20,18 +20,31 @@ export const addMapCustomMapFeature = protect(
     requestUser,
     geometry: object,
     properties: PartialBy<VSMap.FeatureProperties, 'creatorId' | 'createdAt' | 'updatedAt'>,
+    mediaIds?: string[],
   ) => {
     const now = new Date();
-    const [newFeature] = await db
-      .insert(feature)
-      .values({
-        creatorId: requestUser.id,
-        properties: { ...properties, createdAt: now, creatorId: requestUser.id, updatedAt: now },
-        geometry,
-      })
-      .returning();
 
-    // TODO: acutally update used images.. so they won't stick around
+    const newFeature = await db.transaction(async (tx) => {
+      const [insertedFeature] = await tx
+        .insert(feature)
+        .values({
+          creatorId: requestUser.id,
+          properties: { ...properties, createdAt: now, creatorId: requestUser.id, updatedAt: now },
+          geometry,
+        })
+        .returning();
+
+      // mark uploaed media as used
+      if (mediaIds && mediaIds.length > 0) {
+        await tx
+          .update(media)
+          .set({ featureId: insertedFeature.id, used: true })
+          .where(and(inArray(media.id, mediaIds), eq(media.userId, requestUser.id)));
+      }
+
+      return insertedFeature;
+    });
+
     return ServerActionResponse(HttpStatusCode.Created, {
       type: 'Feature',
       id: newFeature.id,
@@ -42,7 +55,13 @@ export const addMapCustomMapFeature = protect(
 );
 
 export const updateMapCustomFeature = protect(
-  async (requestUser, featureId: string, geometry: object, incomingProperties: Partial<VSMap.FeatureProperties>) => {
+  async (
+    requestUser,
+    featureId: string,
+    geometry: object,
+    incomingProperties: Partial<VSMap.FeatureProperties>,
+    mediaIds?: string[],
+  ) => {
     const existing = await db.query.feature.findFirst({
       where: and(eq(feature.id, featureId), eq(feature.creatorId, requestUser.id)),
     });
@@ -50,7 +69,6 @@ export const updateMapCustomFeature = protect(
     if (!existing) {
       return ServerActionError(HttpStatusCode.NotFound, ErrorCode.FeatureNotFound, requestUser.uiLocale);
     }
-    // TODO: acutally update used images.. so they won't stick around
 
     const { creatorId, createdAt, ...restProps } = incomingProperties;
 
@@ -60,15 +78,33 @@ export const updateMapCustomFeature = protect(
       updatedAt: new Date(),
     };
 
-    const [updatedFeature] = await db
-      .update(feature)
-      .set({
-        geometry,
-        properties: finalProperties,
-        updatedAt: new Date(),
-      })
-      .where(eq(feature.id, featureId))
-      .returning();
+    await db.transaction(async (tx) => {
+      // unlink old media
+      await tx
+        .update(media)
+        .set({ featureId: null, used: false })
+        .where(and(eq(media.featureId, featureId), eq(media.userId, requestUser.id)));
+
+      // link new media
+      if (mediaIds && mediaIds.length > 0) {
+        await tx
+          .update(media)
+          .set({ featureId: featureId, used: true })
+          .where(and(inArray(media.id, mediaIds), eq(media.userId, requestUser.id)));
+      }
+
+      // Update feature
+      await tx
+        .update(feature)
+        .set({
+          geometry,
+          properties: finalProperties,
+          updatedAt: new Date(),
+        })
+        .where(eq(feature.id, featureId));
+    });
+
+    const [updatedFeature] = await db.select().from(feature).where(eq(feature.id, featureId));
 
     return ServerActionResponse(HttpStatusCode.Ok, {
       type: 'Feature',
@@ -82,27 +118,14 @@ export const updateMapCustomFeature = protect(
 export const deleteCustomMapFeature = protect(async (requestUser, featureId: string) => {
   const targetFeature = await db.query.feature.findFirst({
     where: and(eq(feature.id, featureId), eq(feature.creatorId, requestUser.id)),
-    columns: {
-      properties: true,
-    },
   });
 
   if (!targetFeature) {
     return ServerActionError(HttpStatusCode.NotFound, ErrorCode.FeatureNotFound, requestUser.uiLocale);
   }
 
-  const imageIdsString = (targetFeature.properties as any)?.images as string | undefined;
-  const imageIds = imageIdsString
-    ? imageIdsString
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean)
-    : [];
-
   await db.transaction(async (tx) => {
-    if (imageIds.length > 0) {
-      await tx.delete(media).where(and(inArray(media.id, imageIds), eq(media.userId, requestUser.id)));
-    }
+    await tx.delete(media).where(eq(media.featureId, featureId));
 
     await tx.delete(feature).where(eq(feature.id, featureId));
   });
@@ -115,7 +138,15 @@ export const deleteCustomMapFeature = protect(async (requestUser, featureId: str
 
 export const getCustomLayerGeoJson = async (): ActionResponse<{ type: string; features: any[] }> => {
   try {
-    const rows = await db.select().from(feature);
+    const rows = await db.query.feature.findMany({
+      with: {
+        mediaItems: {
+          columns: {
+            data: false,
+          },
+        },
+      },
+    });
 
     const geoJson = {
       type: 'FeatureCollection',
@@ -123,7 +154,11 @@ export const getCustomLayerGeoJson = async (): ActionResponse<{ type: string; fe
         type: 'Feature',
         id: row.id,
         geometry: row.geometry,
-        properties: { ...row.properties, updatedAt: row.updatedAt } as VSMap.FeatureProperties,
+        properties: {
+          ...row.properties,
+          updatedAt: row.updatedAt,
+          images: row.mediaItems,
+        },
       })),
     };
 
