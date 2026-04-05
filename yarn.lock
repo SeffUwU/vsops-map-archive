@@ -543,7 +543,7 @@
 
 "@esbuild/win32-x64@0.19.12":
   version "0.19.12"
-  resolved "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.19.12.tgz"
+  resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.19.12.tgz#c57c8afbb4054a3ab8317591a0b7320360b444ae"
   integrity sha512-T1QyPSDCyMXaO3pzBkF96E8xMkiRYbUEZADd29SyPGabqxMViNoii+NcK7eWJAEoU6RZyEm5lVSIjTmcdoB9HA==
 
 "@esbuild/win32-x64@0.27.3":
@@ -2282,7 +2282,7 @@ dotenv@^16.4.5:
 
 drizzle-kit@^0.28.1:
   version "0.28.1"
-  resolved "https://registry.npmjs.org/drizzle-kit/-/drizzle-kit-0.28.1.tgz"
+  resolved "https://registry.yarnpkg.com/drizzle-kit/-/drizzle-kit-0.28.1.tgz#8bb92aa99319446b7158769ec605788f8fa23504"
   integrity sha512-JimOV+ystXTWMgZkLHYHf2w3oS28hxiH1FR0dkmJLc7GHzdGJoJAQtQS5DRppnabsRZwE2U1F6CuezVBgmsBBQ==
   dependencies:
     "@drizzle-team/brocli" "^0.10.2"
@@ -2464,14 +2464,14 @@ es-to-primitive@^1.3.0:
 
 esbuild-register@^3.5.0:
   version "3.6.0"
-  resolved "https://registry.npmjs.org/esbuild-register/-/esbuild-register-3.6.0.tgz"
+  resolved "https://registry.yarnpkg.com/esbuild-register/-/esbuild-register-3.6.0.tgz#cf270cfa677baebbc0010ac024b823cbf723a36d"
   integrity sha512-H2/S7Pm8a9CL1uhp9OvjwrBh5Pvx0H8qVOxNu8Wed9Y7qv56MPtq+GGM8RJpq6glYJn9Wspr8uw7l55uyinNeg==
   dependencies:
     debug "^4.3.4"
 
 esbuild@^0.19.7:
   version "0.19.12"
-  resolved "https://registry.npmjs.org/esbuild/-/esbuild-0.19.12.tgz"
+  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.19.12.tgz#dc82ee5dc79e82f5a5c3b4323a2a641827db3e04"
   integrity sha512-aARqgq8roFBj054KvQr5f1sFu0D65G+miZRCuJyJ0G13Zwx7vRar5Zhn2tkQNzIXcBrNVsv/8stehpj+GAjgbg==
   optionalDependencies:
     "@esbuild/aix-ppc64" "0.19.12"

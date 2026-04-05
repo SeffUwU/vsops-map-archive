@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 4001",
     "lint": "next lint",
     "drizzle:generate": "npx drizzle-kit generate --name",
     "drizzle:migrate": "npx drizzle-kit migrate",
