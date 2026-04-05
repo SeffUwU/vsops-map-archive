@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/sheet';
 import { toast } from '@/hooks/use-toast';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
-import { Calendar, Languages, Loader2 } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Copy, Languages, Loader2 } from 'lucide-react';
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 
 const SUPPORTED_LANGUAGES = [
@@ -35,11 +35,12 @@ interface FeatureInfoSheetProps {
 }
 
 export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps) {
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [zoomedImageIndex, setZoomedImageIndex] = useState<number | null>(null);
   const [translatedDescription, setTranslatedDescription] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLang, setTargetLang] = useState('ru');
   const [selectedDate, setSelectedDate] = useState<string>('all');
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     setTranslatedDescription(null);
@@ -92,6 +93,24 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
     }
     return imagesByDate[selectedDate] || [];
   }, [imagesByDate, selectedDate]);
+
+  // Keyboard navigation for image preview
+  useEffect(() => {
+    if (zoomedImageIndex === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && zoomedImageIndex > 0) {
+        setZoomedImageIndex(zoomedImageIndex - 1);
+      } else if (e.key === 'ArrowRight' && zoomedImageIndex < filteredImages.length - 1) {
+        setZoomedImageIndex(zoomedImageIndex + 1);
+      } else if (e.key === 'Escape') {
+        setZoomedImageIndex(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [zoomedImageIndex, filteredImages.length]);
 
   const handleTranslate = async () => {
     if (!data?.description) return;
@@ -209,11 +228,11 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
                         </div>
                         <p className="text-xs text-muted-foreground">TIP: hold shift to scroll horizontal</p>
                         <div className="flex gap-3 overflow-x-auto pb-2 snap-x custom-scrollbar">
-                          {filteredImages.map((mediaObj) => (
+                          {filteredImages.map((mediaObj, idx) => (
                             <button
                               key={mediaObj.id}
                               type="button"
-                              onClick={() => setZoomedImage(mediaObj.id)}
+                              onClick={() => setZoomedImageIndex(idx)}
                               className="relative flex-shrink-0 w-24 h-24 rounded-md border overflow-hidden snap-start hover:opacity-80 transition-opacity ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <img
@@ -258,18 +277,86 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
         </SheetContent>
       </Sheet>
 
-      <Dialog open={!!zoomedImage} onOpenChange={(open) => !open && setZoomedImage(null)}>
-        <DialogContent className="max-w-4xl border-none bg-transparent shadow-none flex justify-center p-0">
+      <Dialog open={zoomedImageIndex !== null} onOpenChange={(open) => !open && setZoomedImageIndex(null)}>
+        <DialogContent className="max-w-4xl border-none bg-transparent shadow-none p-0">
           <VisuallyHidden.Root>
-            <DialogTitle>{zoomedImage}</DialogTitle>
+            <DialogTitle>Image Preview</DialogTitle>
           </VisuallyHidden.Root>
 
-          {zoomedImage && (
-            <img
-              src={`/api/images/${zoomedImage}`}
-              alt="Enlarged token asset"
-              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-            />
+          {zoomedImageIndex !== null && filteredImages[zoomedImageIndex] && (
+            <div className="relative flex items-center justify-center">
+              {/* Left Arrow */}
+              {zoomedImageIndex > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setZoomedImageIndex(zoomedImageIndex - 1);
+                  }}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+              )}
+
+              {/* Image */}
+              <img
+                src={`/api/images/${filteredImages[zoomedImageIndex].id}`}
+                alt="Enlarged token asset"
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              />
+
+              {/* Right Arrow */}
+              {zoomedImageIndex < filteredImages.length - 1 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setZoomedImageIndex(zoomedImageIndex + 1);
+                  }}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              )}
+
+              {/* Copy URL Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute bottom-2 right-2 z-20 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const imageUrl = `${window.location.origin}/api/images/${filteredImages[zoomedImageIndex].id}`;
+                  try {
+                    await navigator.clipboard.writeText(imageUrl);
+                    setCopySuccess(true);
+                    setTimeout(() => setCopySuccess(false), 2000);
+                    toast({
+                      title: 'Copied!',
+                      description: 'Image URL copied to clipboard',
+                    });
+                  } catch {
+                    toast({
+                      variant: 'destructive',
+                      title: 'Failed to copy',
+                      description: 'Could not copy URL to clipboard',
+                    });
+                  }
+                }}
+              >
+                <Copy className={`h-4 w-4 ${copySuccess ? 'text-green-400' : ''}`} />
+              </Button>
+
+              {/* Image Counter */}
+              {filteredImages.length > 1 && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-sm bg-black/50 text-white text-xs">
+                  {zoomedImageIndex + 1} / {filteredImages.length}
+                </div>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
