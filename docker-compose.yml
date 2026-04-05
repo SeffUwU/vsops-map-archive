@@ -5,17 +5,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: dnd-tracker-client
+    container_name: vsop-archive-client
     restart: always
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:/app/data/data.db
+      - DATABASE_URL=file:/app/data.db
     env_file:
       - .env
     ports:
-      - '4001:3000'
+      - '4001:4001'
     volumes:
-      - sqlite_data:/app/data
+      - ./data.db:/app/data.db
+    networks:
+      - default
+networks:
+  default:
+    name: nginx
+    external: true
 
-volumes:
-  sqlite_data:
