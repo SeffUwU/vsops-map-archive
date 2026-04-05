@@ -40,7 +40,7 @@ export function Sidebar() {
       loading,
       locale,
     },
-    map: { bindMapLayerToggle, mapRef, customLayerJson },
+    map: { bindMapLayerToggle, mapRef, customLayerJson, layersStateRef },
   } = useGlobalContext();
   const t = useTranslation();
   const user = useContextUser();
@@ -50,8 +50,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const [localLang, setLocalLang] = useLocalStorageState<'en' | 'ru'>('en');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { data: traders, isLoading: tradersLoading } = useFetchJson('/data/geojson/traders.geojson');
-  const { data: landmarks, isLoading: landmarksLoading } = useFetchJson('/data/geojson/landmarks.geojson');
+  const { data: traders, isLoading: tradersLoading } = useFetchJson('/traders.geojson');
+  const { data: landmarks, isLoading: landmarksLoading } = useFetchJson('/landmarks.geojson');
 
   if (loading || landmarksLoading || tradersLoading) {
     return loading;
@@ -242,7 +242,11 @@ export function Sidebar() {
       </div>
       {isSearchOpen && (
         <SearchDialog
-          data={[customLayerJson, traders, landmarks]}
+          data={[
+            customLayerJson,
+            layersStateRef.current.traders ? traders : [],
+            layersStateRef.current.landmarks ? landmarks : [],
+          ]}
           isOpen={isSearchOpen}
           onSelect={(center) => {
             mapRef.current?.getView().animate({

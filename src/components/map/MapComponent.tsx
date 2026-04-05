@@ -362,7 +362,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Traders",
         minZoom: 3,
         source: new Vector({
-          url: old ? '/old/traders.geojson' : `/traders.geojson`,
+          url: old ? '/old/traders.geojson' : `/data/geojson/traders.geojson`,
           format: new GeoJSON(),
         }),
         style: function (feature) {
@@ -381,7 +381,7 @@ export function MapComponent({ old }: MapComponentProps) {
         // name: "Translocators",
         minZoom: 2,
         source: new Vector({
-          url: old ? '/old/translocators.geojson' : `/translocators.geojson`,
+          url: old ? '/old/translocators.geojson' : `/data/geojson/translocators.geojson`,
           format: new GeoJSON(),
         }),
         style: handleCustomTranslocatorStyle(layersStateRef),
