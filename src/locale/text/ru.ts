@@ -34,6 +34,7 @@ export const RussianLocale: typeof EnglishLocale = {
     traders: 'Торговцы',
     translocators: 'Транслокаторы',
     custom: 'Кастом',
+    search: 'Поиск',
   },
   pageTitles: { joinCampaign: 'Вступить в кампанию' },
   pageSpecific: {
@@ -90,6 +91,9 @@ export const RussianLocale: typeof EnglishLocale = {
         smithery: 'Кузня',
         town_hall: 'Мэрия/Ратушка',
         trader: 'Торговец',
+        mill: 'Мельница',
+        ruin: 'Руины',
+        other: 'Другое',
       },
     },
   },

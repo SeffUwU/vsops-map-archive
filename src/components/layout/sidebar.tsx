@@ -30,6 +30,8 @@ import { SideBarButton } from './SideBarButton';
 import { useState } from 'react';
 import { SearchDialog } from './Search';
 import { useFetchJson } from '@/hooks/use-fetch-json';
+import Link from 'next/link';
+import Image from 'next/image';
 
 export function Sidebar() {
   const {
@@ -59,7 +61,7 @@ export function Sidebar() {
     <>
       <div
         className={cn(
-          'h-screen dark:bg-slate-800 w-12 border-r-2  items-start flex-col justify-between animate-in duration-200 hidden md:flex',
+          'h-screen w-12 border-r-2 items-start flex-col justify-between animate-in duration-200 hidden md:flex',
           {
             'w-40': expanded,
           },
@@ -69,10 +71,10 @@ export function Sidebar() {
         }}
       >
         <div className="flex flex-col px-2 gap-2 w-full pt-2">
-          {/* <Link href={'/'} className="w-full flex items-center justify-center">
-            <Image src={'/globe.svg'} alt="Main Page" className="dark:hidden" width={48} height={48} />
-            <Image src={'/globe.svg'} alt="Main Page" className="hidden dark:block" width={48} height={48} />
-          </Link> */}
+          <Link href={'/'} className="w-full flex items-center justify-center">
+            <Image src={'/vslogo.png'} alt="Main Page" width={48} height={48} />
+            TOPS Archive
+          </Link>
 
           <Separator orientation="horizontal" />
           <SideBarButton
@@ -162,7 +164,7 @@ export function Sidebar() {
             {...{
               expanded,
               className,
-              title: t.sidebar.theme,
+              title: t.sidebar.search,
               href: '#',
               onClick: () => {
                 setIsSearchOpen((p) => !p);
@@ -233,7 +235,7 @@ export function Sidebar() {
           </Button>
         </div>
       </div>
-      <div className="md:hidden absolute top-0 w-full h-12 bg-white dark:bg-slate-950">
+      <div className="md:hidden absolute top-0 w-full h-12" style={{ backgroundColor: 'hsl(var(--background))' }}>
         <div className="absolute top-4 left-2">
           <Menu />
         </div>

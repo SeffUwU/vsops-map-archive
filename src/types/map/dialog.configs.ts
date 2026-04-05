@@ -10,13 +10,16 @@ export enum FeatureSubTypeEnum {
   DISTRICT = 'district',
   BODY_OF_WATER = 'bow',
   TOWN_HALL = 'town_hall',
+  MILL = 'mill',
+  RUIN = 'ruin',
+  OTHER = 'other',
 }
 
 export const getFeatureDialogConfig = (t: LocaleType) => {
   return {
     fields: [
       { name: 'name', title: t.dialog.feature.nameTitle, defaultValue: 'Building', type: 'text' },
-      { name: 'description', title: t.dialog.feature.descriptionTitle, defaultValue: '', type: 'text' },
+      { name: 'description', title: t.dialog.feature.descriptionTitle, defaultValue: '', type: 'textarea', rows: 4 },
       {
         name: 'type',
         title: t.dialog.feature.descriptionTitle,
@@ -27,7 +30,7 @@ export const getFeatureDialogConfig = (t: LocaleType) => {
         })),
         type: 'select',
       },
-      { title: '[OPTIONAL] Upload photos (100)', name: 'images', type: 'file', defaultValue: [] as any[] },
+      { title: '[OPTIONAL] Upload photos', name: 'images', type: 'file', defaultValue: [] as any[] },
     ],
   } as const;
 };

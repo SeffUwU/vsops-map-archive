@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ChangeEvent, useEffect, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -72,7 +73,7 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
     }
   }, [currentValues]);
 
-  const bindValueHandler = (name: string) => (e: ChangeEvent<HTMLInputElement>) => {
+  const bindValueHandler = (name: string) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setValue((prev) => ({ ...prev, [name]: e.target.value }));
   };
 
@@ -130,7 +131,7 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
               if (field.type === 'text') {
                 return (
                   <div key={idx}>
-                    <Label htmlFor="name" className="text-right">
+                    <Label htmlFor={field.name} className="text-right">
                       {field.title}
                     </Label>
                     <Input
@@ -138,6 +139,24 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
                       value={value[field.name]}
                       onChange={bindValueHandler(field.name)}
                       className="col-span-3"
+                      autoFocus={idx === 0}
+                    />
+                  </div>
+                );
+              }
+
+              if (field.type === 'textarea') {
+                return (
+                  <div key={idx}>
+                    <Label htmlFor={field.name} className="text-right">
+                      {field.title}
+                    </Label>
+                    <Textarea
+                      id={field.name}
+                      value={value[field.name]}
+                      onChange={bindValueHandler(field.name)}
+                      className="col-span-3"
+                      rows={field.rows ?? 3}
                       autoFocus={idx === 0}
                     />
                   </div>

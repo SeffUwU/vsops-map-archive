@@ -1,6 +1,7 @@
 namespace DialogBuilder {
   export type BaseField = { title: string; name: string; defaultValue: string };
   export type TextField = BaseField & { type: 'text' };
+  export type TextareaField = BaseField & { type: 'textarea'; rows?: number };
   export type SelectField = BaseField & { type: 'select'; values: { value: string; title: string }[] };
   export type FileField = {
     title: string;
@@ -12,7 +13,7 @@ namespace DialogBuilder {
 
   export type FieldBuilderConfig = {
     title?: string;
-    fields: readonly (TextField | SelectField | FileField)[];
+    fields: readonly (TextField | TextareaField | SelectField | FileField)[];
   };
 
   export type MapFieldsToData<T extends FieldBuilderConfig> = {

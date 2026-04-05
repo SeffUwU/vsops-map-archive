@@ -8,16 +8,25 @@ export const localStorageUtils = {
       return [] as T;
     }
   },
-  pushToArray<T>(key: string, newItem: T, uniqueByProp?: keyof T): T {
+  pushToArray<T>(key: string, newItem: T, uniqueByProp?: keyof T): T[] {
     try {
       const currentArray = this.getArrayFrom<T[]>(key);
-      const updatedArray = uniqueByProp
-        ? currentArray.map((v) => (v[uniqueByProp] === newItem[uniqueByProp] ? newItem : v))
-        : [...currentArray, newItem];
+      let updatedArray: T[];
+
+      if (uniqueByProp) {
+        const existingIndex = currentArray.findIndex((v) => v[uniqueByProp] === newItem[uniqueByProp]);
+        if (existingIndex !== -1) {
+          updatedArray = currentArray.map((v, idx) => (idx === existingIndex ? newItem : v));
+        } else {
+          updatedArray = [...currentArray, newItem];
+        }
+      } else {
+        updatedArray = [...currentArray, newItem];
+      }
 
       localStorage.setItem(key, JSON.stringify(updatedArray));
 
-      return newItem;
+      return updatedArray;
     } catch (error) {
       console.error(`Error updating ${key} in localStorage:`, error);
       throw error;

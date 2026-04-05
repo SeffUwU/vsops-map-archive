@@ -24,7 +24,7 @@ export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialog
   const [query, setQuery] = useState('');
 
   const allFeatures = useMemo(() => {
-    return data.flatMap((collection) => collection.features || []);
+    return data.flatMap((collection) => collection?.features || []);
   }, [data]);
 
   const filteredResults = useMemo(() => {
@@ -34,10 +34,14 @@ export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialog
 
     return allFeatures
       .filter((f) => {
-        const name = f.properties?.name?.toLowerCase() || '';
-        const label = f.properties?.label?.toLowerCase() || '';
+        const props = f.properties || {};
 
-        return name.includes(s) || label.includes(s);
+        const searchableFields = [props.name, props.label, props.type, props.wares]
+          .filter(Boolean)
+          .map(String)
+          .map((v) => v.toLowerCase());
+
+        return searchableFields.some((text) => text.includes(s));
       })
       .slice(0, 10);
   }, [query, allFeatures]);
@@ -58,26 +62,33 @@ export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialog
         <CommandEmpty>No results found.</CommandEmpty>
         {filteredResults.length > 0 && (
           <CommandGroup heading="Locations">
-            {filteredResults.map((f, i) => (
-              <CommandItem
-                key={f.id || i}
-                value={f.id || i}
-                onSelect={() => handleSelect(f)}
-                className="flex items-center gap-3 p-2 cursor-pointer"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-muted">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex flex-col">
-                  <p className="text-sm font-medium leading-none">
-                    {f.properties?.name || f.properties?.label || '%NO NAME%'}
-                  </p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {f.properties?.type || 'Landmark'} • {f?.geometry?.type}
-                  </p>
-                </div>
-              </CommandItem>
-            ))}
+            {filteredResults.map((f, i) => {
+              const searchableText = [f.properties?.name, f.properties?.label, f.properties?.wares]
+                .filter(Boolean)
+                .join(' ');
+
+              return (
+                <CommandItem
+                  key={f.id || i}
+                  value={searchableText}
+                  onSelect={() => handleSelect(f)}
+                  className="flex items-center gap-3 p-2 cursor-pointer"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-muted">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-sm font-medium leading-none">
+                      {f.properties?.name || f.properties?.label || '%NO NAME%'}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {f.properties?.type || f.properties?.wares || 'Landmark'} • {f?.geometry?.type}
+                      {f.properties?.creatorId && ` • by ${f.properties.creatorId}`}
+                    </p>
+                  </div>
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         )}
       </CommandList>

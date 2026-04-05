@@ -20,7 +20,10 @@ export function HeaderInfo({ title, description, type }: HeaderInfoProps) {
   const Icon = type ? typeToIconMap[type] : House;
 
   return (
-    <div className="w-full p-2 bg-slate-200 dark:bg-slate-800 dark:border-l-2 dark:border-l-slate-300 mb-2">
+    <div className="w-full p-2 mb-2" style={{
+      backgroundColor: 'hsl(var(--muted))',
+      borderLeft: '1px solid hsl(var(--border))',
+    }}>
       <h3 className="pb-0 flex flex-row gap-2 items-center">
         <Icon />
         {title}

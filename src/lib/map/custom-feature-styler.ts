@@ -68,7 +68,7 @@ export const handleCustomFeatureLayerStyle =
         if (feature.get('shapeType') === 'circle') {
           return new Style({
             fill: new Fill({
-              color: 'rgba(0, 191, 255, 0.3)', // Deep sky blue with transparency
+              color: 'rgba(0, 191, 255, 0.3)',
             }),
             stroke: new Stroke({
               color: '#00BFFF',

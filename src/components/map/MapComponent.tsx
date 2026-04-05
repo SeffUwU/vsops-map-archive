@@ -662,7 +662,11 @@ export function MapComponent({ old }: MapComponentProps) {
   return (
     <>
       {drawMode && (
-        <div id="mouse-position-out" className="absolute top-4 left-20 bg-white z-30 p-4 rounded-md shadow-sm">
+        <div
+          id="mouse-position-out"
+          className="absolute top-4 left-20 z-30 p-4 rounded-md shadow-sm"
+          style={{ backgroundColor: 'hsl(var(--card))' }}
+        >
           <Button onClick={cancelDrawing}>Confirm</Button>
         </div>
       )}

@@ -37,6 +37,7 @@ export const EnglishLocale = {
     traders: 'Traders',
     translocators: 'Translocators',
     custom: 'Custom',
+    search: 'Search',
   },
   pageTitles: {
     joinCampaign: 'Join campaign',
@@ -94,6 +95,9 @@ export const EnglishLocale = {
         smithery: 'Smithery',
         town_hall: 'Town Hall',
         trader: 'Trader',
+        mill: 'Mill',
+        other: 'Other',
+        ruin: 'Ruin',
       } as Record<FeatureSubTypeEnum, string>,
     },
   },
