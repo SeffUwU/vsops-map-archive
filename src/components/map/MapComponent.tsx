@@ -21,6 +21,7 @@ import {
   deleteCustomMapFeature,
   updateMapCustomFeature,
 } from '@/server/actions/map/map.actions';
+import { getSettlements } from '@/server/actions/settlements/settlements.actions';
 import { getFeatureDialogConfig } from '@/types/map/dialog.configs';
 import { VSMap } from '@/types/map/vsmap';
 import { useSearchParams } from 'next/navigation';
@@ -46,6 +47,7 @@ import { FeatureInfoSheet } from './FeatureInfoSheet';
 import { FeaturePromptDialog } from './FeaturePromptDialog';
 import { localStorageUtils } from '@/lib/local-storage/local-storage.utils';
 import { config } from '@/constants/config';
+import { ISettlement } from '@/entities';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +58,6 @@ export function MapComponent({ old }: MapComponentProps) {
   const searchParams = useSearchParams();
 
   const t = useTranslation();
-  const featureBuilderDialog = useRef(getFeatureDialogConfig(t));
   const user = useContextUser();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const {
@@ -65,6 +66,7 @@ export function MapComponent({ old }: MapComponentProps) {
   const [inspectData, setInspectData] = useState<Record<string, string> | null>(null);
   const [drawMode, setDrawMode] = useState<string | null>(null);
   const [selectedShape, setSelectedShape] = useState<VSMap.FeatureShape | null>(null);
+  const [selectedTrader, setSelectedTrader] = useState<Feature | null>(null);
   const [promptConfig, setPromptConfig] = useState<{
     isOpen: boolean;
     resolve: (val: any) => void;
@@ -77,6 +79,15 @@ export function MapComponent({ old }: MapComponentProps) {
   const selectedTLRef = useRef<Feature | null>(null);
   const lastHoveredFeature = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
+  const settlements = useRef<ISettlement[] | null>([]);
+
+  useEffect(() => {
+    getSettlements().then((response) => {
+      if (!response.is_error) {
+        settlements.current = response.value;
+      }
+    });
+  }, []);
 
   function asyncPrompt<T extends DialogBuilder.FieldBuilderConfig>(
     fieldConfig: T,
@@ -86,6 +97,12 @@ export function MapComponent({ old }: MapComponentProps) {
       setPromptConfig({ isOpen: true, resolve, config: fieldConfig, currentValues });
     });
   }
+
+  const buildFeatureDialogConfig = () => {
+    const baseConfig = getFeatureDialogConfig(t, settlements.current!);
+
+    return baseConfig;
+  };
 
   const drawInteractionRef = useRef<any>(null);
 
@@ -163,7 +180,7 @@ export function MapComponent({ old }: MapComponentProps) {
       map.removeInteraction(draw);
       drawInteractionRef.current = null;
 
-      const result = await asyncPrompt(featureBuilderDialog.current);
+      const result = await asyncPrompt(buildFeatureDialogConfig());
 
       if (!result.cancelled) {
         Object.entries(result.data).forEach(([key, value]) => {
@@ -343,13 +360,13 @@ export function MapComponent({ old }: MapComponentProps) {
             });
           } else if (type == 'Server') {
             return new Style({
-              image: baseIconCache['Base'],
               text: new Text({
-                font: 'bold ' + String(localStorage.labelSize || 12) + 'px "arial narrow", "sans serif"',
-                text: 'spawn',
-                textAlign: 'left',
+                font: 'bold 16px "arial narrow", "sans serif"',
+                text: 'SPAWN',
+                textAlign: 'center',
                 textBaseline: 'bottom',
                 fill: sharedTextFill,
+                offsetX: -15,
                 stroke: sharedTextStroke,
               }),
             });
@@ -464,6 +481,7 @@ export function MapComponent({ old }: MapComponentProps) {
         lastHoveredFeature.current = null;
         selectedTraderRef.current = null;
         selectedTLRef.current = null;
+        setSelectedTrader(null);
       }
 
       if (feature && layer) {
@@ -474,6 +492,7 @@ export function MapComponent({ old }: MapComponentProps) {
           selectedTraderRef.current = feature;
           feature.setStyle(highlightStyleTrader(feature));
           lastHoveredFeature.current = feature as any;
+          setSelectedTrader(feature);
         } else if (layer === layersRef.current?.translocators && isTLOn) {
           selectedTLRef.current = feature;
           feature.setStyle(highlightStyleTranslocator);
@@ -586,7 +605,6 @@ export function MapComponent({ old }: MapComponentProps) {
       contextmenu.extend(menuItems);
 
       if (!currentFeature) return;
-
       const type = currentFeature.getGeometry()?.getType();
 
       if (isStandartFeatureSet(currentFeature, type) || !user) return;
@@ -601,8 +619,8 @@ export function MapComponent({ old }: MapComponentProps) {
           },
           {
             text: 'Edit Feature',
-            callback: async () => {
-              const result = await asyncPrompt(featureBuilderDialog.current, currentFeature.getProperties() as any);
+            callback: async (data) => {
+              const result = await asyncPrompt(buildFeatureDialogConfig(), currentFeature.getProperties() as any);
 
               if (!result.cancelled) {
                 Object.entries(result.data).forEach(([key, value]) => {
@@ -658,7 +676,6 @@ export function MapComponent({ old }: MapComponentProps) {
 
   // TODO: hacky for map size kek
   const mainContainer = typeof document !== 'undefined' ? document.querySelector('main') : null;
-
   return (
     <>
       {drawMode && (
@@ -670,7 +687,16 @@ export function MapComponent({ old }: MapComponentProps) {
           <Button onClick={cancelDrawing}>Confirm</Button>
         </div>
       )}
-      <FeatureInfoSheet data={inspectData} setInspectData={setInspectData} />
+
+      <div
+        className="absolute top-2 left-1/2 z-30 p-2 bg-card rounded-sm"
+        style={{ display: selectedTrader?.getProperties().name ? undefined : 'none' }}
+      >
+        {selectedTrader?.getProperties().name
+          ? `${selectedTrader?.getProperties()?.name} - ${selectedTrader?.getProperties()?.wares}`
+          : 'Unknown'}
+      </div>
+      <FeatureInfoSheet data={inspectData} setInspectData={setInspectData} settlements={settlements.current!} />
       {promptConfig && (
         <FeaturePromptDialog
           isOpen={promptConfig.isOpen}

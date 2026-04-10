@@ -22,6 +22,27 @@
       "when": 1775376154359,
       "tag": "0002_fix-media-fk-cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1775516385546,
+      "tag": "0003_settlements",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1775518402982,
+      "tag": "0004_add_filename_to_media",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1775814492114,
+      "tag": "0005_add_settlement_id_to_features",
+      "breakpoints": true
     }
   ]
 }

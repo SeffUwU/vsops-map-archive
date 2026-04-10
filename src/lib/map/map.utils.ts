@@ -57,7 +57,7 @@ export function isStandartFeatureSet(feature: FeatureLike, type?: Type) {
     featureProps.type === 'Server' ||
     featureProps.type === 'Spawn' ||
     'wares' in featureProps ||
-    type === 'MultiLineString' ||
+    (type === 'MultiLineString' && feature.getProperties()?.shapeType !== 'road') ||
     !!featureProps?.tag
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { MapPin } from 'lucide-react';
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,54 +9,66 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { getFeatureCenter } from '@/lib/map/map.utils';
 import { DialogTitle } from '../ui/dialog';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
-interface SearchDialogProps {
-  data: any[];
-  onSelect?: (center: [number, number], feature: any) => void;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
+export interface SearchableItem {
+  id: string | number;
+  title: string;
+  subtitle?: string;
+  searchTags?: string[];
+  icon?: React.ReactNode;
 }
 
-export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialogProps) {
+interface SearchDialogProps<T extends SearchableItem> {
+  items: T[];
+  onSelect?: (item: T) => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  placeholder?: string;
+  emptyMessage?: string;
+  groupHeading?: string;
+  renderIcon?: (item: T) => React.ReactNode;
+  renderActions?: (item: T) => React.ReactNode;
+  headerAction?: React.ReactNode;
+  maxResults?: number;
+}
+
+export function SearchDialog<T extends SearchableItem>({
+  items,
+  onSelect,
+  isOpen,
+  setIsOpen,
+  placeholder = 'Search...',
+  emptyMessage = 'No results found.',
+  groupHeading = 'Results',
+  renderIcon,
+  renderActions,
+  headerAction,
+  maxResults = 200,
+}: SearchDialogProps<T>) {
   const [query, setQuery] = useState('');
   const commandListRef = useRef<HTMLDivElement>(null);
 
-  const allFeatures = useMemo(() => {
-    return data.flatMap((collection) => collection?.features || []);
-  }, [data]);
-
-  const filteredFeatures = useMemo(() => {
-    if (!query) return allFeatures.slice(0, 200);
+  const filteredItems = useMemo(() => {
+    if (!query) return items.slice(0, maxResults);
 
     const s = query.toLowerCase();
 
-    return allFeatures
-      .filter((f) => {
-        const props = f.properties || {};
-        const searchableFields = [
-          f?.id,
-          f?.props?.id,
-          props.name,
-          props.label,
-          props.description,
-          props.creatorId,
-          props.type,
-          props.wares,
-        ]
+    return items
+      .filter((item) => {
+        const searchableText = [item.id, item.title, item.subtitle, ...(item.searchTags || [])]
           .filter(Boolean)
           .map(String)
           .map((v) => v.toLowerCase());
 
-        return searchableFields.some((text) => text.includes(s));
+        return searchableText.some((text) => text.includes(s));
       })
-      .slice(0, 200);
-  }, [query, allFeatures]);
+      .slice(0, maxResults);
+  }, [query, items, maxResults]);
 
   const virtualizer = useVirtualizer({
-    count: filteredFeatures.length,
+    count: filteredItems.length,
     getScrollElement: () => commandListRef.current,
     estimateSize: () => 56,
     overscan: 5,
@@ -65,9 +76,8 @@ export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialog
 
   useEffect(() => {
     virtualizer.measure();
-  }, [filteredFeatures.length, virtualizer]);
+  }, [filteredItems.length, virtualizer]);
 
-  // reset scroll position when query changes
   useEffect(() => {
     if (commandListRef.current) {
       commandListRef.current.scrollTop = 0;
@@ -75,22 +85,22 @@ export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialog
     virtualizer.scrollToIndex(0, { align: 'start' });
   }, [query, virtualizer]);
 
-  const handleSelect = (feature: any) => {
-    const center = getFeatureCenter(feature);
-
-    if (onSelect) onSelect(center, feature);
-
+  const handleSelect = (item: T) => {
+    if (onSelect) onSelect(item);
     setIsOpen(false);
   };
 
   return (
     <CommandDialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTitle className="sr-only">Search Map Features</DialogTitle>
-      <CommandInput placeholder="Search landmarks or bases..." value={query} onValueChange={setQuery} />
+      <DialogTitle className="sr-only">Search</DialogTitle>
+      <div className="relative">
+        <CommandInput placeholder={placeholder} value={query} onValueChange={setQuery} />
+        {headerAction}
+      </div>
       <CommandList ref={commandListRef} className="max-h-[400px]" cmdk-list-skip-native-filtering="true">
-        <CommandEmpty>No results found.</CommandEmpty>
-        {filteredFeatures.length > 0 && (
-          <CommandGroup heading="Locations">
+        <CommandEmpty>{emptyMessage}</CommandEmpty>
+        {filteredItems.length > 0 && (
+          <CommandGroup heading={groupHeading}>
             <div
               style={{
                 height: `${virtualizer.getTotalSize()}px`,
@@ -99,21 +109,11 @@ export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialog
               }}
             >
               {virtualizer.getVirtualItems().map((virtualRow) => {
-                const f = filteredFeatures[virtualRow.index];
-                const i = virtualRow.index;
-                const searchableText = [
-                  f?.id,
-                  f?.props?.id,
-                  f.properties?.name,
-                  f.properties?.label,
-                  f.properties?.wares,
-                ]
-                  .filter(Boolean)
-                  .join(' ');
+                const item = filteredItems[virtualRow.index];
 
                 return (
                   <div
-                    key={f.id || i}
+                    key={item?.id || item?.title}
                     data-index={virtualRow.index}
                     ref={(node) => virtualizer.measureElement(node)}
                     className="absolute left-0 top-0 w-full"
@@ -122,22 +122,18 @@ export function SearchDialog({ data, onSelect, isOpen, setIsOpen }: SearchDialog
                     }}
                   >
                     <CommandItem
-                      value={searchableText}
-                      onSelect={() => handleSelect(f)}
+                      value={`${item.title} ${item.subtitle || ''} ${(item.searchTags || []).join(' ')}`}
+                      onSelect={() => handleSelect(item)}
                       className="flex items-center gap-3 p-2 cursor-pointer"
                     >
                       <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-muted">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        {renderIcon ? renderIcon(item) : item.icon}
                       </div>
-                      <div className="flex flex-col">
-                        <p className="text-sm font-medium leading-none">
-                          {f.properties?.name || f.properties?.label || '%NO NAME%'}
-                        </p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {f.properties?.type || f.properties?.wares || 'Landmark'} • {f?.geometry?.type}
-                          {/* {f.properties?.creatorId && ` • by ${f.properties.creatorId}`} */}
-                        </p>
+                      <div className="flex flex-col flex-1">
+                        <p className="text-sm font-medium leading-none">{item.title}</p>
+                        {item.subtitle && <p className="text-xs text-muted-foreground">{item.subtitle}</p>}
                       </div>
+                      {renderActions && <div onClick={(e) => e.stopPropagation()}>{renderActions(item)}</div>}
                     </CommandItem>
                   </div>
                 );

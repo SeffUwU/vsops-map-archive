@@ -35,11 +35,13 @@ export async function POST(req: NextRequest) {
     }
 
     const compressedBuffer = await sharpInstance.toBuffer();
+    const filename = file.name || `upload.${file.type.split('/')[1] || 'png'}`;
     const [inserted] = await db
       .insert(media)
       .values({
         data: compressedBuffer,
         mimeType: file.type,
+        filename,
         userId: result.value.user.id,
       })
       .returning({ id: media.id });

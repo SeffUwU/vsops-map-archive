@@ -42,6 +42,8 @@ next-env.d.ts
 # dev data
 dev_data
 data.db
+data/cache/
+public/data/geojson/
 
 # new one!
 pgdata

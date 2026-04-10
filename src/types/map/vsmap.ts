@@ -33,6 +33,7 @@ export namespace VSMap {
     type: FeatureSubTypeEnum;
     images: string | MediaItem[]; // String during creation (comma-separated), array when fetched from API
     shapeType: FeatureShape;
+    settlementId: string | null;
     creatorId: string;
     createdAt: Date; // example: '2026-03-19T14:22:34.008Z'
     updatedAt: Date;

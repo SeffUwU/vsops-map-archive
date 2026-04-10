@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { ISettlement } from '@/entities';
 import { toast } from '@/hooks/use-toast';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Calendar, ChevronLeft, ChevronRight, Copy, Languages, Loader2 } from 'lucide-react';
@@ -29,12 +30,33 @@ const SUPPORTED_LANGUAGES = [
   { label: 'Portuguese', value: 'pt' },
 ];
 
-interface FeatureInfoSheetProps {
-  data: Record<string, string> | null;
-  setInspectData: Dispatch<SetStateAction<Record<string, string> | null>>;
+export interface InfoSheetField {
+  key: string;
+  label: string;
+  value: string | React.ReactNode;
 }
 
-export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps) {
+export interface InfoSheetImage {
+  id: string;
+  mimeType?: string;
+  createdAt?: string;
+}
+
+export interface InfoSheetData {
+  title: string;
+  description?: string;
+  fields?: InfoSheetField[];
+  images?: InfoSheetImage[];
+  raw?: Record<string, any>;
+}
+
+interface FeatureInfoSheetProps {
+  data: InfoSheetData | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function InfoSheet({ data, open, onOpenChange }: FeatureInfoSheetProps) {
   const [zoomedImageIndex, setZoomedImageIndex] = useState<number | null>(null);
   const [translatedDescription, setTranslatedDescription] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -44,14 +66,21 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
 
   useEffect(() => {
     setTranslatedDescription(null);
-  }, [data, targetLang]); // Clear if token or language changes
+  }, [data, targetLang]);
+
+  // Collect images from data.images or data.raw.images
+  const allImages = useMemo((): InfoSheetImage[] => {
+    if (data?.images && Array.isArray(data.images)) return data.images;
+    if (data?.raw?.images && Array.isArray(data.raw.images)) return data.raw.images;
+    return [];
+  }, [data?.images, data?.raw?.images]);
 
   const imagesByDate = useMemo(() => {
-    if (!data?.images || !Array.isArray(data.images)) return {};
+    if (allImages.length === 0) return {};
 
-    const grouped: Record<string, Array<{ id: string; mimeType?: string }>> = {};
+    const grouped: Record<string, InfoSheetImage[]> = {};
 
-    data.images.forEach((mediaObj: any) => {
+    allImages.forEach((mediaObj) => {
       const date = mediaObj.createdAt ? new Date(mediaObj.createdAt).toISOString().split('T')[0] : 'Unknown';
 
       if (!grouped[date]) {
@@ -79,14 +108,12 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
       );
 
     return sorted;
-  }, [data?.images]);
+  }, [allImages]);
 
-  // Get unique dates for dropdown
   const availableDates = useMemo(() => {
     return Object.keys(imagesByDate);
   }, [imagesByDate]);
 
-  // Filter images by selected date
   const filteredImages = useMemo(() => {
     if (selectedDate === 'all') {
       return Object.values(imagesByDate).flat();
@@ -94,7 +121,6 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
     return imagesByDate[selectedDate] || [];
   }, [imagesByDate, selectedDate]);
 
-  // Keyboard navigation for image preview
   useEffect(() => {
     if (zoomedImageIndex === null) return;
 
@@ -148,7 +174,7 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
 
   return (
     <>
-      <Sheet open={!!data} onOpenChange={(open) => !open && setInspectData(null)} modal={false}>
+      <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
         <SheetContent
           className="flex flex-col justify-between overflow-y-auto sm:max-w-md"
           onPointerDownOutside={(e) => e.preventDefault()}
@@ -156,10 +182,12 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
         >
           <SheetHeader className="gap-4">
             <div>
-              <SheetTitle>{data?.name || data?.label || 'Token Info'}</SheetTitle>
-              <SheetDescription className="mt-2 text-sm leading-relaxed">
-                {translatedDescription || data?.description}
-              </SheetDescription>
+              <SheetTitle>{data?.title || 'Info'}</SheetTitle>
+              {data?.description && (
+                <SheetDescription className="mt-2 text-sm leading-relaxed">
+                  {translatedDescription || data.description}
+                </SheetDescription>
+              )}
             </div>
 
             {data?.description && (
@@ -192,8 +220,19 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
           </SheetHeader>
 
           <div className="flex-1 flex flex-col gap-6 py-6">
-            {data &&
-              Object.entries(data)
+            {data?.fields?.map((field) => (
+              <div key={field.key} className="flex flex-col gap-1.5">
+                <Label className="capitalize text-muted-foreground">{field.label}</Label>
+                {typeof field.value === 'string' ? (
+                  <p className="text-sm font-medium leading-none">{field.value}</p>
+                ) : (
+                  field.value
+                )}
+              </div>
+            ))}
+
+            {data?.raw &&
+              Object.entries(data.raw)
                 .filter(([k]) => !['name', 'description', 'label'].includes(k))
                 .map(([key, value]) => {
                   if (key === 'images') {
@@ -257,7 +296,6 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
                     return null;
                   }
 
-                  // ...rest are plain text
                   return (
                     <div key={key} className="flex flex-col gap-1.5">
                       <Label className="capitalize text-muted-foreground">{key}</Label>
@@ -285,7 +323,6 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
 
           {zoomedImageIndex !== null && filteredImages[zoomedImageIndex] && (
             <div className="relative flex items-center justify-center">
-              {/* Left Arrow */}
               {zoomedImageIndex > 0 && (
                 <Button
                   variant="ghost"
@@ -300,14 +337,12 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
                 </Button>
               )}
 
-              {/* Image */}
               <img
                 src={`/api/images/${filteredImages[zoomedImageIndex].id}`}
                 alt="Enlarged token asset"
                 className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
               />
 
-              {/* Right Arrow */}
               {zoomedImageIndex < filteredImages.length - 1 && (
                 <Button
                   variant="ghost"
@@ -322,7 +357,6 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
                 </Button>
               )}
 
-              {/* Copy URL Button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -350,7 +384,6 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
                 <Copy className={`h-4 w-4 ${copySuccess ? 'text-green-400' : ''}`} />
               </Button>
 
-              {/* Image Counter */}
               {filteredImages.length > 1 && (
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-sm bg-black/50 text-white text-xs">
                   {zoomedImageIndex + 1} / {filteredImages.length}
@@ -362,4 +395,30 @@ export function FeatureInfoSheet({ data, setInspectData }: FeatureInfoSheetProps
       </Dialog>
     </>
   );
+}
+
+// Backwards compatible wrapper
+interface LegacyFeatureInfoSheetProps {
+  data: Record<string, string> | null;
+  settlements: ISettlement[];
+  setInspectData: Dispatch<SetStateAction<Record<string, string> | null>>;
+}
+
+export function FeatureInfoSheet({ data, setInspectData, settlements }: LegacyFeatureInfoSheetProps) {
+  const infoSheetData: InfoSheetData | null = useMemo(() => {
+    if (!data) return null;
+
+    return {
+      title: data.name || data.label || 'Token Info',
+      description: data.description,
+      raw: {
+        ...data,
+        ...(data['settlement'] && {
+          settlement: settlements.find((s) => s.id === data['settlement'])?.name || '',
+        }),
+      },
+    };
+  }, [data]);
+
+  return <InfoSheet data={infoSheetData} open={!!data} onOpenChange={(open) => !open && setInspectData(null)} />;
 }

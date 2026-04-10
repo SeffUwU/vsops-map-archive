@@ -13,6 +13,7 @@ export const media = sqliteTable(
       .$defaultFn(() => createId()),
     userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     featureId: text('feature_id').references(() => feature.id, { onDelete: 'cascade' }),
+    filename: text('filename'),
     data: blob('data'),
     mimeType: text('mime_type'),
     used: integer('used', { mode: 'boolean' }).default(false),

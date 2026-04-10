@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { FileUploadField } from '../fields/FileField';
 import { deleteImageAction } from '@/server/actions/uploads/images';
 import { MediaItem } from '@/types/map/vsmap';
+import { User, X } from 'lucide-react';
 
 // helper function to extract MediaItem objects from differemt formats
 function extractMediaItems(value: any): MediaItem[] {
@@ -179,7 +180,7 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
                       <SelectContent>
                         <SelectGroup>
                           {field.values.map(({ title, value }) => (
-                            <SelectItem value={value} key={value}>
+                            <SelectItem value={value as any} key={value}>
                               {title}
                             </SelectItem>
                           ))}
@@ -199,6 +200,98 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
                       onUploadSuccess={(mediaItem) => onUploadSuccessHandler(field.name, mediaItem)}
                       onManualDelete={(id) => onManualDeleteHandler(field.name, id)}
                     />
+                  </div>
+                );
+              }
+
+              if (field.type === 'members') {
+                const members: string[] = value[field.name] || [];
+                const [memberInput, setMemberInput] = useState('');
+
+                const addMember = () => {
+                  if (memberInput.trim() && !members.includes(memberInput.trim())) {
+                    setValue((prev) => ({
+                      ...prev,
+                      [field.name]: [...(prev[field.name] || []), memberInput.trim()],
+                    }));
+                    setMemberInput('');
+                  }
+                };
+
+                const removeMember = (member: string) => {
+                  setValue((prev) => ({
+                    ...prev,
+                    [field.name]: (prev[field.name] || []).filter((m: string) => m !== member),
+                  }));
+                };
+
+                return (
+                  <div key={idx}>
+                    <Label htmlFor={field.name}>{field.title}</Label>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {members.map((member) => (
+                        <div key={member} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-xs">
+                          <User className="h-3 w-3" />
+                          <span>{member}</span>
+                          <button
+                            onClick={() => removeMember(member)}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={memberInput}
+                        onChange={(e) => setMemberInput(e.target.value)}
+                        placeholder="Add member..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addMember();
+                          }
+                        }}
+                      />
+                      <Button size="sm" onClick={addMember}>
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (field.type === 'coordinate') {
+                const coord: [number, number] = value[field.name] || [0, 0];
+
+                return (
+                  <div key={idx}>
+                    <Label htmlFor={field.name}>{field.title}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        value={coord[0]}
+                        onChange={(e) =>
+                          setValue((prev) => ({
+                            ...prev,
+                            [field.name]: [parseInt(e.target.value) || 0, prev[field.name]?.[1] ?? 0],
+                          }))
+                        }
+                        placeholder="X"
+                      />
+                      <Input
+                        type="number"
+                        value={coord[1]}
+                        onChange={(e) =>
+                          setValue((prev) => ({
+                            ...prev,
+                            [field.name]: [prev[field.name]?.[0] ?? 0, parseInt(e.target.value) || 0],
+                          }))
+                        }
+                        placeholder="Y"
+                      />
+                    </div>
                   </div>
                 );
               }

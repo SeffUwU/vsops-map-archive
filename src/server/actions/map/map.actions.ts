@@ -29,6 +29,7 @@ export const addMapCustomMapFeature = protect(
         .insert(feature)
         .values({
           creatorId: requestUser.id,
+          settlementId: properties.settlementId || null,
           properties: { ...properties, createdAt: now, creatorId: requestUser.id, updatedAt: now },
           geometry,
         })
@@ -98,6 +99,7 @@ export const updateMapCustomFeature = protect(
         .update(feature)
         .set({
           geometry,
+          settlementId: finalProperties.settlementId || null,
           properties: finalProperties,
           updatedAt: new Date(),
         })

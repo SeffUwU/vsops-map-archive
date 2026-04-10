@@ -3,6 +3,7 @@ import { relations, sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { users } from './user.entity';
 import { media } from './media';
+import { settlement } from './settlement';
 import { VSMap } from '@/types/map/vsmap';
 
 export const feature = sqliteTable(
@@ -12,6 +13,7 @@ export const feature = sqliteTable(
       .primaryKey()
       .$defaultFn(() => createId()),
     creatorId: text('creator_id').references(() => users.id, { onDelete: 'set null' }),
+    settlementId: text('settlement_id').references(() => settlement.id, { onDelete: 'set null' }),
     geometry: text('geometry', { mode: 'json' }).notNull(),
     properties: text('properties', { mode: 'json' }).$type<VSMap.FeatureProperties>().notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
@@ -19,11 +21,13 @@ export const feature = sqliteTable(
   },
   (table) => ({
     creatorIdIdx: index('features_creator_id_idx').on(table.creatorId),
+    settlementIdIdx: index('features_settlement_id_idx').on(table.settlementId),
   }),
 );
 
 export const campaignFeaturesRelations = relations(feature, ({ one, many }) => ({
   creator: one(users, { fields: [feature.creatorId], references: [users.id] }),
+  settlement: one(settlement, { fields: [feature.settlementId], references: [settlement.id] }),
   mediaItems: many(media),
 }));
 

@@ -9,6 +9,7 @@ export enum ErrorCode {
   CampaignAlreadyJoined = 'campaign_already_joined',
   InternalServerError = 'internal_server_error',
   FeatureNotFound = 'feature_not_found',
+  SettlementNotFound = 'settlement_not_found',
   InvalidSignUpCode = 'invalid_sign_up_code',
   InvalidInput = 'invalid_input',
 }

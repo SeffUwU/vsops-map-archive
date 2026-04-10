@@ -4,7 +4,7 @@ import { FeatureLike } from 'ol/Feature';
 import Map from 'ol/Map';
 import { Fill, Icon, Stroke, Style, Text } from 'ol/style';
 import { getVisitedFeatures } from './map.utils';
-
+const LIGHT_BLUE = 'rgba(0, 191, 255, 0.05)';
 /**
  * Handles styling for custom features layer. This mainly is for reduction of ize
  * @param map
@@ -68,11 +68,11 @@ export const handleCustomFeatureLayerStyle =
         if (feature.get('shapeType') === 'circle') {
           return new Style({
             fill: new Fill({
-              color: 'rgba(0, 191, 255, 0.3)',
+              color: LIGHT_BLUE,
             }),
             stroke: new Stroke({
-              color: '#00BFFF',
-              width: 2,
+              color: updatedSinceLastVisit ? 'gold' : '#00BFFF',
+              width: updatedSinceLastVisit ? 3 : 2,
             }),
             text: new Text({
               text: title,
@@ -81,18 +81,19 @@ export const handleCustomFeatureLayerStyle =
               stroke: new Stroke({ color: '#fff', width: 2 }),
               backgroundFill: new Fill({ color: 'rgba(0, 0, 0, 0.3)' }),
               padding: [2, 2, 2, 2],
-              offsetY: -16,
+              offsetY: -35,
+              keepUpright: true,
             }),
           });
         }
 
         return new Style({
           fill: new Fill({
-            color: 'rgba(255, 165, 0, 0.3)',
+            color: LIGHT_BLUE,
           }),
           stroke: new Stroke({
-            color: '#FF8C00',
-            width: 2,
+            color: updatedSinceLastVisit ? 'gold' : '#00BFFF',
+            width: updatedSinceLastVisit ? 3 : 2,
           }),
           text: new Text({
             text: title,
@@ -101,7 +102,8 @@ export const handleCustomFeatureLayerStyle =
             padding: [2, 2, 2, 2],
             fill: new Fill({ color: '#000' }),
             stroke: new Stroke({ color: '#fff', width: 2 }),
-            offsetY: -15,
+            offsetY: -35,
+            keepUpright: true,
           }),
         });
       }

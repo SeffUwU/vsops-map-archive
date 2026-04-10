@@ -21,6 +21,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
       .select({
         data: media.data,
         mimeType: media.mimeType,
+        filename: media.filename,
       })
       .from(media)
       .where(eq(media.id, uuid))
@@ -31,14 +32,18 @@ export async function GET(req: NextRequest, context: RouteContext) {
     }
 
     const body = item.data as Buffer;
+    const ext = item.mimeType?.split('/')[1] || 'png';
+    const filename = item.filename || `${uuid}.${ext}`;
 
     return new NextResponse(body as any, {
       headers: {
         'Content-Type': item.mimeType ?? 'application/octet-stream',
+        'Content-Disposition': `inline; filename="${filename}"`,
         'Content-Length': body.length.toString(),
-        // ETag is just the ID because these images are immutable
         ETag: uuid,
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Filename': filename,
+        'X-Mime-Type': item.mimeType ?? 'image/png',
       },
     });
   } catch (error) {

@@ -38,6 +38,7 @@ export const EnglishLocale = {
     translocators: 'Translocators',
     custom: 'Custom',
     search: 'Search',
+    settlements: 'Settlements',
   },
   pageTitles: {
     joinCampaign: 'Join campaign',
@@ -85,6 +86,7 @@ export const EnglishLocale = {
       nameTitle: 'Name',
       descriptionTitle: 'Description',
       selectTypeTitle: 'Type',
+      settlement: 'Settlement',
       selectValues: {
         base: 'Base',
         bow: 'Body of water',

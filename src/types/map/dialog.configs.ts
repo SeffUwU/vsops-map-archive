@@ -1,3 +1,4 @@
+import { ISettlement } from '@/entities';
 import type { LocaleType } from '@/locale/text/en';
 
 export enum FeatureSubTypeEnum {
@@ -15,7 +16,8 @@ export enum FeatureSubTypeEnum {
   OTHER = 'other',
 }
 
-export const getFeatureDialogConfig = (t: LocaleType) => {
+export const getFeatureDialogConfig = (t: LocaleType, settlements: ISettlement[]) => {
+  const proxySettlement = [null, ...settlements];
   return {
     fields: [
       { name: 'name', title: t.dialog.feature.nameTitle, defaultValue: 'Building', type: 'text' },
@@ -28,6 +30,24 @@ export const getFeatureDialogConfig = (t: LocaleType) => {
           value: val,
           title: t.dialog.feature.selectValues[val],
         })),
+        type: 'select',
+      },
+      {
+        name: 'settlement',
+        title: t.dialog.feature.settlement,
+        defaultValue: null,
+        values: proxySettlement.map((val) => {
+          if (val === null) {
+            return {
+              value: null,
+              title: 'None',
+            };
+          }
+          return {
+            value: val.id,
+            title: val.name,
+          };
+        }),
         type: 'select',
       },
       { title: '[OPTIONAL] Upload photos', name: 'images', type: 'file', defaultValue: [] as any[] },

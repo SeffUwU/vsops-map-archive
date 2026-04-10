@@ -35,6 +35,7 @@ export const RussianLocale: typeof EnglishLocale = {
     translocators: 'Транслокаторы',
     custom: 'Кастом',
     search: 'Поиск',
+    settlements: 'Поселения',
   },
   pageTitles: { joinCampaign: 'Вступить в кампанию' },
   pageSpecific: {
@@ -81,6 +82,7 @@ export const RussianLocale: typeof EnglishLocale = {
       descriptionTitle: 'Описание',
       nameTitle: 'Название',
       selectTypeTitle: 'Тип',
+      settlement: 'Поселение',
       selectValues: {
         base: 'База',
         bow: 'Вода',

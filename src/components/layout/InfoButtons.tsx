@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Info, BookOpen } from 'lucide-react';
+import { mapColorRef, mapIcons } from '@/constants/map.consts';
 
+function configToCSSRGB(key: keyof (typeof mapColorRef)['Traders']) {
+  return `rgb(${mapColorRef.Traders[key][0]}, ${mapColorRef.Traders[key][1]}, ${mapColorRef.Traders[key][2]})`;
+}
 export function InfoButtons() {
   const [legendOpen, setLegendOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -38,6 +42,43 @@ export function InfoButtons() {
               <p className="text-muted-foreground">
                 Feature has <strong>Photos or Screenshots</strong>. Right-click → Inspect to access detailed information
               </p>
+            </div>
+            <div className="flex flex-col gap-3 p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--muted))' }}>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Artisan trader') }}>
+                <img src={mapIcons.Traders} /> Artisan trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Building materials trader') }}>
+                <img src={mapIcons.Traders} />
+                Building materials trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Clothing trader') }}>
+                <img src={mapIcons.Traders} />
+                Clothing trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Commodities trader') }}>
+                <img src={mapIcons.Traders} />
+                Commodities trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Agriculture trader') }}>
+                <img src={mapIcons.Traders} />
+                Agriculture trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Furniture trader') }}>
+                <img src={mapIcons.Traders} />
+                Furniture trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Luxuries trader') }}>
+                <img src={mapIcons.Traders} />
+                Luxuries trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Survival goods trader') }}>
+                <img src={mapIcons.Traders} />
+                Survival goods trader
+              </div>
+              <div className="flex flex-row gap-2" style={{ color: configToCSSRGB('Treasure hunter trader') }}>
+                <img src={mapIcons.Traders} />
+                Treasure hunter trader
+              </div>
             </div>
           </div>
         </DialogContent>

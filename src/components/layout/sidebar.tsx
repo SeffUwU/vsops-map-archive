@@ -8,17 +8,15 @@ import { Separator } from '@radix-ui/react-separator';
 import {
   ChevronLeft,
   ChevronRight,
+  Globe,
   House,
   Languages,
   LogIn,
   Map,
   Menu,
-  Moon,
   Search,
   Store,
-  Sun,
   User,
-  Users,
   Wrench,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -28,10 +26,12 @@ import { Button } from '../ui/button';
 import { SideBarButton } from './SideBarButton';
 
 import { useState } from 'react';
-import { SearchDialog } from './Search';
+import { FeatureSearchDialog } from './FeatureSearchDialog';
 import { useFetchJson } from '@/hooks/use-fetch-json';
 import Link from 'next/link';
 import Image from 'next/image';
+import { SettlementsDialog } from './SettlementsDialog';
+import { ISettlement } from '@/entities/settlement';
 
 export function Sidebar() {
   const {
@@ -50,10 +50,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const [localLang, setLocalLang] = useLocalStorageState<'en' | 'ru'>('en');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSettlementsOpen, setIsSettlementsOpen] = useState(false);
   const { data: traders, isLoading: tradersLoading } = useFetchJson('/traders.geojson');
   const { data: landmarks, isLoading: landmarksLoading } = useFetchJson('/landmarks.geojson');
+  const { data: settlements, isLoading: settlementsLoading } = useFetchJson<ISettlement[]>('/api/settlements');
 
-  if (loading || landmarksLoading || tradersLoading) {
+  if (loading || landmarksLoading || tradersLoading || settlementsLoading) {
     return loading;
   }
 
@@ -157,6 +159,17 @@ export function Sidebar() {
           >
             <Wrench />
           </SideBarButton>
+
+          <SideBarButton
+            {...{
+              expanded,
+              className,
+              title: t.sidebar.settlements,
+              onClick: () => setIsSettlementsOpen(true),
+            }}
+          >
+            <Globe />
+          </SideBarButton>
         </div>
         <div className="flex flex-col px-2 gap-2 w-full">
           {/* <DebugButtons className={className} /> */}
@@ -241,7 +254,7 @@ export function Sidebar() {
         </div>
       </div>
       {isSearchOpen && (
-        <SearchDialog
+        <FeatureSearchDialog
           data={[
             customLayerJson,
             layersStateRef.current.traders ? traders : [],
@@ -256,6 +269,9 @@ export function Sidebar() {
           }}
           setIsOpen={setIsSearchOpen}
         />
+      )}
+      {isSettlementsOpen && settlements && (
+        <SettlementsDialog settlements={settlements} isOpen={isSettlementsOpen} setIsOpen={setIsSettlementsOpen} />
       )}
     </>
   );

@@ -11,6 +11,7 @@ export const EnglishErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.CampaignNotFound]: 'Campaign not found.',
   [ErrorCode.InternalServerError]: 'There was a server-side error. Contact US if this issue persist.',
   [ErrorCode.FeatureNotFound]: 'Map feature is not found',
+  [ErrorCode.SettlementNotFound]: 'Settlement not found',
   [ErrorCode.InvalidSignUpCode]: 'Invalid sign up code',
   [ErrorCode.InvalidInput]: 'Invalid input',
 };
