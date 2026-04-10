@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       id: inserted.id,
+      mimeType: file.type,
+      description: '',
       originalSize: inputBuffer.length,
       compressedSize: compressedBuffer.length,
     });

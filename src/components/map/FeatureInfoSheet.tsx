@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { ISettlement } from '@/entities';
+import { IMedia, ISettlement } from '@/entities';
 import { toast } from '@/hooks/use-toast';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Calendar, ChevronLeft, ChevronRight, Copy, Languages, Loader2 } from 'lucide-react';
@@ -36,17 +36,11 @@ export interface InfoSheetField {
   value: string | React.ReactNode;
 }
 
-export interface InfoSheetImage {
-  id: string;
-  mimeType?: string;
-  createdAt?: string;
-}
-
 export interface InfoSheetData {
   title: string;
   description?: string;
   fields?: InfoSheetField[];
-  images?: InfoSheetImage[];
+  images?: IMedia[];
   raw?: Record<string, any>;
 }
 
@@ -69,7 +63,7 @@ export function InfoSheet({ data, open, onOpenChange }: FeatureInfoSheetProps) {
   }, [data, targetLang]);
 
   // Collect images from data.images or data.raw.images
-  const allImages = useMemo((): InfoSheetImage[] => {
+  const allImages = useMemo((): IMedia[] => {
     if (data?.images && Array.isArray(data.images)) return data.images;
     if (data?.raw?.images && Array.isArray(data.raw.images)) return data.raw.images;
     return [];
@@ -78,7 +72,7 @@ export function InfoSheet({ data, open, onOpenChange }: FeatureInfoSheetProps) {
   const imagesByDate = useMemo(() => {
     if (allImages.length === 0) return {};
 
-    const grouped: Record<string, InfoSheetImage[]> = {};
+    const grouped: Record<string, IMedia[]> = {};
 
     allImages.forEach((mediaObj) => {
       const date = mediaObj.createdAt ? new Date(mediaObj.createdAt).toISOString().split('T')[0] : 'Unknown';
@@ -87,10 +81,7 @@ export function InfoSheet({ data, open, onOpenChange }: FeatureInfoSheetProps) {
         grouped[date] = [];
       }
 
-      grouped[date].push({
-        id: mediaObj.id,
-        mimeType: mediaObj.mimeType,
-      });
+      grouped[date].push(mediaObj);
     });
 
     const sorted = Object.entries(grouped)
@@ -322,7 +313,7 @@ export function InfoSheet({ data, open, onOpenChange }: FeatureInfoSheetProps) {
           </VisuallyHidden.Root>
 
           {zoomedImageIndex !== null && filteredImages[zoomedImageIndex] && (
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex items-center justify-center flex-col gap-2">
               {zoomedImageIndex > 0 && (
                 <Button
                   variant="ghost"
@@ -337,11 +328,48 @@ export function InfoSheet({ data, open, onOpenChange }: FeatureInfoSheetProps) {
                 </Button>
               )}
 
-              <img
-                src={`/api/images/${filteredImages[zoomedImageIndex].id}`}
-                alt="Enlarged token asset"
-                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-              />
+              <div className="relative">
+                <img
+                  src={`/api/images/${filteredImages[zoomedImageIndex].id}`}
+                  alt="Enlarged token asset"
+                  className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                />
+                {filteredImages.length > 1 && (
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-sm bg-black/50 text-white text-xs">
+                    {zoomedImageIndex + 1} / {filteredImages.length}
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute bottom-2 right-2 z-20 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const imageUrl = `${window.location.origin}/api/images/${filteredImages[zoomedImageIndex].id}`;
+                    try {
+                      await navigator.clipboard.writeText(imageUrl);
+                      setCopySuccess(true);
+                      setTimeout(() => setCopySuccess(false), 2000);
+                      toast({
+                        title: 'Copied!',
+                        description: 'Image URL copied to clipboard',
+                      });
+                    } catch {
+                      toast({
+                        variant: 'destructive',
+                        title: 'Failed to copy',
+                        description: 'Could not copy URL to clipboard',
+                      });
+                    }
+                  }}
+                >
+                  <Copy className={`h-4 w-4 ${copySuccess ? 'text-green-400' : ''}`} />
+                </Button>
+              </div>
+
+              <div className=" -bottom-20 slide-out-to-left-1/2 bg-slate-800 bg-opacity-50 p-4 rounded-sm ">
+                {(filteredImages[zoomedImageIndex] as any).description}
+              </div>
 
               {zoomedImageIndex < filteredImages.length - 1 && (
                 <Button
@@ -355,39 +383,6 @@ export function InfoSheet({ data, open, onOpenChange }: FeatureInfoSheetProps) {
                 >
                   <ChevronRight className="h-6 w-6" />
                 </Button>
-              )}
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute bottom-2 right-2 z-20 h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 text-white"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  const imageUrl = `${window.location.origin}/api/images/${filteredImages[zoomedImageIndex].id}`;
-                  try {
-                    await navigator.clipboard.writeText(imageUrl);
-                    setCopySuccess(true);
-                    setTimeout(() => setCopySuccess(false), 2000);
-                    toast({
-                      title: 'Copied!',
-                      description: 'Image URL copied to clipboard',
-                    });
-                  } catch {
-                    toast({
-                      variant: 'destructive',
-                      title: 'Failed to copy',
-                      description: 'Could not copy URL to clipboard',
-                    });
-                  }
-                }}
-              >
-                <Copy className={`h-4 w-4 ${copySuccess ? 'text-green-400' : ''}`} />
-              </Button>
-
-              {filteredImages.length > 1 && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-sm bg-black/50 text-white text-xs">
-                  {zoomedImageIndex + 1} / {filteredImages.length}
-                </div>
               )}
             </div>
           )}

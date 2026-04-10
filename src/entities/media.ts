@@ -14,6 +14,7 @@ export const media = sqliteTable(
     userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     featureId: text('feature_id').references(() => feature.id, { onDelete: 'cascade' }),
     filename: text('filename'),
+    description: text('description'),
     data: blob('data'),
     mimeType: text('mime_type'),
     used: integer('used', { mode: 'boolean' }).default(false),
@@ -29,3 +30,5 @@ export const mediaRelations = relations(media, ({ one }) => ({
   user: one(users, { fields: [media.userId], references: [users.id] }),
   feature: one(feature, { fields: [media.featureId], references: [feature.id] }),
 }));
+
+export type IMedia = typeof media.$inferSelect;

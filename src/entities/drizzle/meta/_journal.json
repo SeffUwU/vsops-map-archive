@@ -43,6 +43,13 @@
       "when": 1775814492114,
       "tag": "0005_add_settlement_id_to_features",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1775825335741,
+      "tag": "0006_add_media_description",
+      "breakpoints": true
     }
   ]
 }

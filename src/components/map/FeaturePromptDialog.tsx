@@ -22,6 +22,7 @@ function extractMediaItems(value: any): MediaItem[] {
       return {
         id: typeof item === 'string' ? item : String(item),
         mimeType: '',
+        description: '',
         used: false,
         createdAt: new Date(),
       } as MediaItem;
@@ -39,6 +40,7 @@ function extractMediaItems(value: any): MediaItem[] {
           ({
             id,
             mimeType: '',
+            description: '',
             used: false,
             createdAt: new Date(),
           }) as MediaItem,
@@ -97,12 +99,18 @@ export function FeaturePromptDialog({ isOpen, onClose, config, currentValues }: 
       const currentValue = prev[fieldName];
       const existingItems = extractMediaItems(currentValue);
 
-      if (!existingItems.find((item) => item.id === mediaItem.id)) {
-        const updatedItems = [...existingItems, mediaItem];
+      const existingIndex = existingItems.findIndex((item) => item.id === mediaItem.id);
+      if (existingIndex >= 0) {
+        const updatedItems = [...existingItems];
+        updatedItems[existingIndex] = {
+          ...updatedItems[existingIndex],
+          ...mediaItem,
+          description: mediaItem.description ?? updatedItems[existingIndex].description,
+        };
         return { ...prev, [fieldName]: updatedItems };
       }
 
-      return prev;
+      return { ...prev, [fieldName]: [...existingItems, mediaItem] };
     });
 
     setSessionUploadedIds((prev) => new Set(prev).add(mediaItem.id));

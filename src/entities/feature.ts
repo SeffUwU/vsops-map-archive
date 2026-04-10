@@ -31,5 +31,5 @@ export const campaignFeaturesRelations = relations(feature, ({ one, many }) => (
   mediaItems: many(media),
 }));
 
-export type ICampaignFeature = typeof feature.$inferSelect;
-export type INewCampaignFeature = typeof feature.$inferInsert;
+export type IFeature = typeof feature.$inferSelect;
+export type INewFeature = typeof feature.$inferInsert;

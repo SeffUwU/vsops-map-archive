@@ -4,6 +4,7 @@ import { FeatureSubTypeEnum } from './dialog.configs';
 export interface MediaItem {
   id: string;
   mimeType: string;
+  description?: string;
   used: boolean;
   createdAt: Date;
 }

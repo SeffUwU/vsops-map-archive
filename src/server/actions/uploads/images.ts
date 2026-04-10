@@ -46,3 +46,19 @@ export const deleteImageAction = protect(async (user: TokenPayload, mediaId: str
 
   return ServerActionResponse(HttpStatusCode.Ok, { deletedId: mediaId });
 });
+
+export const updateImageDescriptionAction = protect(
+  async (user: TokenPayload, mediaId: string, description: string) => {
+    const updated = await db
+      .update(media)
+      .set({ description })
+      .where(and(eq(media.id, mediaId), eq(media.userId, user.id)))
+      .returning({ id: media.id, description: media.description });
+
+    if (!updated.length) {
+      return ServerActionError(HttpStatusCode.NotFound, ErrorCode.FeatureNotFound);
+    }
+
+    return ServerActionResponse(HttpStatusCode.Ok, updated[0]);
+  },
+);
